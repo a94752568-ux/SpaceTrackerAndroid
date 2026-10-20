@@ -1,0 +1,28 @@
+[package]
+name = "spacetracker"
+version = "1.0.0"
+description = "SpaceTracker — Mission Control HUD de rastreo satelital (TLE + SGP4)"
+authors = ["SpaceTracker"]
+edition = "2021"
+rust-version = "1.77.2"
+
+# Librería compartida: entrypoint de escritorio y móvil (Capacitor-style).
+[lib]
+name = "spacetracker_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+# Release optimizado para RAM/CPU mínimas (prioridad del proyecto).
+[profile.release]
+panic = "abort"
+codegen-units = 1
+lto = true
+opt-level = "s"
+strip = true

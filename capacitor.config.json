@@ -1,0 +1,33 @@
+{
+  "appId": "dev.spacetracker.app",
+  "appName": "SpaceTracker",
+  "webDir": "dist",
+  "server": {
+    "androidScheme": "https"
+  },
+  "plugins": {
+    "StatusBar": {
+      "style": "DARK",
+      "backgroundColor": "#030508",
+      "overlaysWebView": true
+    },
+    "SplashScreen": {
+      "launchShowDuration": 400,
+      "backgroundColor": "#030508",
+      "showSpinner": false,
+      "androidScaleType": "CENTER_CROP"
+    },
+    "Keyboard": {
+      "resize": "body"
+    }
+  },
+  "android": {
+    "allowMixedContent": false,
+    "backgroundColor": "#030508"
+  },
+  "ios": {
+    "contentInset": "always",
+    "allowsLinkPreview": false,
+    "backgroundColor": "#030508"
+  }
+}

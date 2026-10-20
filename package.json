@@ -1,0 +1,50 @@
+{
+  "name": "spacetracker",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Explorador de satélites artificiales con datos orbitales TLE (propagación SGP4 vía satellite.js).",
+  "engines": {
+    "node": ">=20.19"
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit",
+    "tauri": "tauri",
+    "dev:native": "tauri dev",
+    "build:native": "tauri build",
+    "cap:sync": "cap sync",
+    "cap:android": "cap open android",
+    "cap:ios": "cap open ios",
+    "test": "node --test scripts/tle-validation.test.mjs scripts/tle-epoch.test.mjs scripts/orbit-passes.test.mjs scripts/live-catalog-epoch.test.mjs scripts/catalog-sources.test.mjs scripts/catalog-fallback.test.mjs scripts/ui-smoke.test.mjs scripts/map-tiles.test.mjs scripts/favorites.test.mjs scripts/map-markers.test.mjs scripts/time-sim.test.mjs scripts/telemetry-log.test.mjs scripts/hotkeys.test.mjs scripts/export-passes.test.mjs scripts/terminator.test.mjs scripts/fleet-compute.test.mjs scripts/map-css.test.mjs scripts/native-guards.test.mjs scripts/tle-filter.test.mjs scripts/ortho.test.mjs",
+    "test:live": "RUN_LIVE=1 node --test scripts/network-live.test.mjs",
+    "seed:generate": "node scripts/generate-seed.mjs",
+    "report": "node scripts/generate-agent-context.cjs",
+    "agent:start": "npm run report && npm run dev"
+  },
+  "dependencies": {
+    "@capacitor/android": "^8.5.3",
+    "@capacitor/cli": "^8.5.3",
+    "@capacitor/core": "^8.5.3",
+    "@capacitor/splash-screen": "^8.0.2",
+    "@capacitor/status-bar": "^8.0.4",
+    "leaflet": "^1.9.4",
+    "pngjs": "^7.0.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "satellite.js": "7.1.0"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2.12.3",
+    "@types/d3-geo": "^3.1.1",
+    "@types/leaflet": "^1.9.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "@types/topojson-client": "^3.1.5",
+    "@vitejs/plugin-react": "^5.0.0",
+    "typescript": "~5.9.0",
+    "vite": "^7.0.0"
+  }
+}
