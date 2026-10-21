@@ -23,8 +23,9 @@ export const HITBOX_PX = 24;
  * Tope duro del tier DOM (favoritos + categoría activa + seleccionado).
  * Por encima de ~150 nodos divIcon el DOM vuelve a ser el cuello de botella;
  * el exceso permanece en canvas sin perder información (color + tooltip).
+ * REDUCIDO de 150 a 50 para mejorar rendimiento en modo mapa.
  */
-export const MAX_DOM_MARKERS = 150;
+export const MAX_DOM_MARKERS = 50;
 
 /** Clase canónica del marcador seleccionado (pulso rítmico en CSS). */
 export const SELECTED_SAT_CLASS = "selected-satellite-active";

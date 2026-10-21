@@ -56,6 +56,8 @@ button {
   font: inherit;
   color: inherit;
   cursor: pointer;
+  /* INP optimization: hint to browser that buttons will transition */
+  transition: background-color 0.2s ease, border-color 0.2s ease, transform 0.1s ease;
 }
 
 ::selection {
@@ -475,6 +477,8 @@ button {
   opacity: 1;
   will-change: transform; /* aceleración por hardware en el repliegue */
   transition: transform 0.3s ease, opacity 0.3s ease;
+  /* INP optimization: skip rendering when off-screen */
+  contain: layout style paint;
 }
 
 .st-app.left-closed .st-sidebar {
@@ -1161,6 +1165,8 @@ button {
   pointer-events: none;
   will-change: transform; /* aceleración por hardware en el slide-in/out */
   transition: transform 0.3s ease, opacity 0.3s ease;
+  /* INP optimization: skip rendering when off-screen */
+  contain: layout style paint;
 }
 
 .st-right.open {
@@ -1557,6 +1563,36 @@ button {
   clip-path: var(--bevel-sm);
   outline: none;
   transition: all 0.3s ease;
+}
+
+.st-input-with-btn {
+  display: flex;
+  gap: 4px;
+}
+
+.st-input-with-btn input {
+  flex: 1;
+  min-width: 0;
+}
+
+.st-input-with-btn button {
+  padding: 7px 10px;
+  border: 1px solid var(--line);
+  background: var(--bg-raise);
+  color: var(--muted);
+  clip-path: var(--bevel-sm);
+  font-size: 14px;
+  transition: all 0.3s ease;
+}
+
+.st-input-with-btn button:hover:not(:disabled) {
+  border-color: var(--accent);
+  color: var(--text);
+}
+
+.st-input-with-btn button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .st-row input:focus,

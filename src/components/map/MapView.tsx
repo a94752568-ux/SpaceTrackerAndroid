@@ -401,30 +401,51 @@ export default function MapView({
         canvasMarkersRef.current.delete(id);
       }
     }
-  }, [sats, domIds]);
+  }, [sats.length, domIds]);
 
   /* --- frames del worker: cubos de 2 s + post-limit durante scrub --- */
   const fleetBucket = Math.floor(now.getTime() / FLEET_UPDATE_MS);
   const applyFrame = (frame: FleetFrame) => {
     const { ids, data } = frame;
     const t0 = performance.now();
+    const map = mapRef.current;
+    if (!map) return;
+    const zoom = map.getZoom();
+    // En zoom lejano (< 8), solo actualizar marcadores visibles en viewport para mejorar rendimiento
+    const bounds = zoom < 8 ? map.getBounds() : null;
+    // Limitar número de marcadores a actualizar por frame para evitar bloqueos
+    let updated = 0;
+    const maxUpdatesPerFrame = zoom < 8 ? 200 : 500;
+    
     for (let i = 0; i < ids.length; i++) {
+      if (updated >= maxUpdatesPerFrame) break;
+      
       const id = ids[i];
       const o = i * FLEET_STRIDE;
       const ok = data[o + 5] === 1;
+      const lat = data[o];
+      const lon = data[o + 1];
+      
+      // Skip if zoom is low and marker is outside viewport
+      if (bounds && (lat < bounds.getSouth() || lat > bounds.getNorth() || lon < bounds.getWest() || lon > bounds.getEast())) {
+        continue;
+      }
+      
       const dom = domMarkersRef.current.get(id);
       if (dom) {
-        if (ok) dom.setLatLng([data[o], data[o + 1]]);
+        if (ok) dom.setLatLng([lat, lon]);
+        updated++;
         continue; // el tier DOM nunca se oculta: si no propaga, se queda quieto
       }
       const cm = canvasMarkersRef.current.get(id);
       if (!cm) continue;
       if (ok) {
-        cm.setLatLng([data[o], data[o + 1]]);
+        cm.setLatLng([lat, lon]);
         if (cm.options.fillOpacity === 0) cm.setStyle(FLEET_ON);
       } else if (cm.options.fillOpacity !== 0) {
         cm.setStyle(FLEET_OFF);
       }
+      updated++;
     }
     if (onFleetInfoRef.current && Date.now() - lastInfoRef.current > 1000) {
       lastInfoRef.current = Date.now();
@@ -447,14 +468,16 @@ export default function MapView({
       });
     };
     const since = Date.now() - lastPostRef.current;
-    if (since < 250) {
+    // Throttling muy agresivo: 2000ms para modo mapa con muchos satélites
+    const throttleMs = 2000;
+    if (since < throttleMs) {
       window.clearTimeout(trailTimerRef.current);
-      trailTimerRef.current = window.setTimeout(post, 260);
+      trailTimerRef.current = window.setTimeout(post, throttleMs + 10);
     } else {
       post();
     }
     return () => window.clearTimeout(trailTimerRef.current);
-  }, [sats, domIds, fleetBucket]);
+  }, [sats.length, domIds, fleetBucket]);
 
   /* --- observador --- */
   useEffect(() => {
@@ -506,6 +529,7 @@ export default function MapView({
   }, [centerTriggerRef.current, observer]);
 
   /* --- Luna --- */
+  const moonBucket = Math.floor(now.getTime() / 60000); // Actualizar cada minuto, no cada frame
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
@@ -528,7 +552,7 @@ export default function MapView({
       `<b>Luna</b><br/>Distancia: ${moon.distanceKm.toFixed(0)} km<br/>Sub-lunar: ${moon.lat.toFixed(2)}°, ${moon.lon.toFixed(2)}°`,
       { direction: "top", offset: [0, -10], className: "st-tip" },
     );
-  }, [now]);
+  }, [moonBucket]);
 
   /* --- Efecto Glitch exclusivo para satélites --- */
   useEffect(() => {
@@ -550,6 +574,7 @@ export default function MapView({
       if (isGlitching) satEl.classList.add("glitch-satellites");
       else satEl.classList.remove("glitch-satellites");
     }
+    // Solo iterar sobre marcadores DOM (canvas markers no tienen elementos DOM)
     for (const domMk of domMarkersRef.current.values()) {
       const el = domMk.getElement();
       if (el) {
@@ -557,14 +582,7 @@ export default function MapView({
         else el.classList.remove("glitch-satellites");
       }
     }
-    for (const cm of canvasMarkersRef.current.values()) {
-      const el = cm.getElement();
-      if (el) {
-        if (isGlitching) el.classList.add("glitch-satellites");
-        else el.classList.remove("glitch-satellites");
-      }
-    }
-  }, [isGlitching, sats, domIds, selected]);
+  }, [isGlitching]);
 
   /* --- TIER 1: seleccionado (DOM + retícula + pulso + rotación) --- */
   const selectedId = selected?.id ?? null;
@@ -602,13 +620,15 @@ export default function MapView({
       return;
     }
 
-    if (!satMarkerRef.current || isNewSelection) {
-      satMarkerRef.current?.remove();
-      satMarkerRef.current = L.marker([fix.latDeg, fix.lonDeg], {
-        icon: satIconFor(selected),
-        zIndexOffset: 1000,
-      }).addTo(map);
-      satElRef.current =
+    // Deferir trabajo pesado de creación de capas para mejorar INP
+    const createLayers = () => {
+      if (!satMarkerRef.current || isNewSelection) {
+        satMarkerRef.current?.remove();
+        satMarkerRef.current = L.marker([fix.latDeg, fix.lonDeg], {
+          icon: satIconFor(selected),
+          zIndexOffset: 1000,
+        }).addTo(map);
+        satElRef.current =
         satMarkerRef.current.getElement()?.querySelector<HTMLElement>(".st-ico") ?? null;
     } else {
       satMarkerRef.current.setLatLng([fix.latDeg, fix.lonDeg]);
@@ -701,6 +721,20 @@ export default function MapView({
       flyUntilRef.current = Date.now() + 1400;
     } else if (tracked && Date.now() > flyUntilRef.current) {
       map.panTo([fix.latDeg, fix.lonDeg], { animate: true, duration: 0.9, easeLinearity: 0.9 });
+    }
+    };
+
+    // Deferir trabajo pesado usando requestIdleCallback para mejorar INP
+    if (isNewSelection) {
+      // Para selecciones nuevas, hacer el trabajo inmediatamente pero en microtask
+      requestAnimationFrame(() => createLayers());
+    } else {
+      // Para actualizaciones, deferir usando requestIdleCallback
+      if ('requestIdleCallback' in window) {
+        (window as any).requestIdleCallback(() => createLayers());
+      } else {
+        setTimeout(() => createLayers(), 0);
+      }
     }
   }, [selected, now, tracked, selectedId]);
 

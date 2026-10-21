@@ -30,7 +30,7 @@ export interface FavoritesState {
   radarMode: boolean;
 }
 
-export const LIST_ICONS: readonly string[] = ["★", "🛰️", "🚀", "️", "", "", "🧭", "🌍"];
+export const LIST_ICONS: readonly string[] = ["★", "🛰️", "🚀", "📡", "🔬", "🛸", "🧭", "🌍"];
 export const DEFAULT_LIST_NAME = "Favoritos";
 
 const KEY_V2 = "spacetracker:favorites:v2";

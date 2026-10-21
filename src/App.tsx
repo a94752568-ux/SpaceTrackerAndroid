@@ -6,7 +6,7 @@
  * - selección, seguimiento, favoritos v2 (listas + radar), observador,
  * - Modo Teatro: paneles laterales colapsables (persistidos).
  */
-import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
 
 import Header from "./components/Header";
 import Sidebar from "./components/Sidebar";
@@ -82,6 +82,7 @@ export default function App() {
   const scrubRaf = useRef(0);
   const scrubPending = useRef(0);
   const [centerOnObserverTrigger, setCenterOnObserverTrigger] = useState(0);
+  const [, startTransition] = useTransition();
 
   /* Reloj real de 1 s (base del modo live y del origen del slider). */
   useEffect(() => {
@@ -228,6 +229,9 @@ export default function App() {
     return [...payload.sats, ...externals.filter((s) => !ids.has(s.id))];
   }, [payload, externals]);
 
+  /* O(1) satellite lookup map for INP optimization */
+  const satMap = useMemo(() => new Map(allSats.map((s) => [s.id, s])), [allSats]);
+
   /** Radar Personalizado: el mapa pinta solo favoritos. */
   const mapSats = useMemo<Sat[]>(
     () => (fav.radarMode ? allSats.filter((s) => favIds.has(s.id)) : allSats),
@@ -253,9 +257,12 @@ export default function App() {
   }, [selected]);
 
   const handleSelect = useCallback((s: Sat) => {
-    setSelectedId(s.id);
-    setTracked(true); // flyTo + centrado continuo hasta que el operador arrastre
-  }, []);
+    // Use React transition for non-urgent selection update
+    startTransition(() => {
+      setSelectedId(s.id);
+      setTracked(true); // flyTo + centrado continuo hasta que el operador arrastre
+    });
+  }, [startTransition]);
 
   /** Salud TLE viva: % de filas recibidas aceptadas como vigentes. */
   const tleHealth = useMemo(() => {
@@ -329,35 +336,44 @@ export default function App() {
         if (e.key === "Escape") (e.target as HTMLElement).blur();
         return;
       }
+      // Synchronous preventDefault for immediate feedback
       switch (e.key) {
         case " ":
-          e.preventDefault();
-          if (sim.mode === "live") handlePause();
-          else handlePlayLive();
-          break;
         case "/":
-          e.preventDefault();
-          document.getElementById("st-search-input")?.focus();
-          break;
-        case "Escape":
-          handleCloseDetail();
-          setConsoleOpen(false);
-          break;
         case "ArrowLeft":
-        case "ArrowRight": {
+        case "ArrowRight":
           e.preventDefault();
-          const nextId = cycleFavorite([...favIds], selectedId, e.key === "ArrowRight" ? 1 : -1);
-          if (nextId !== null) {
-            const s = allSats.find((x) => x.id === nextId);
-            if (s) handleSelect(s);
-          }
           break;
-        }
       }
+      // Defer state updates to setTimeout(0) for INP optimization (allows paint before execution)
+      setTimeout(() => {
+        switch (e.key) {
+          case " ":
+            if (sim.mode === "live") handlePause();
+            else handlePlayLive();
+            break;
+          case "/":
+            document.getElementById("st-search-input")?.focus();
+            break;
+          case "Escape":
+            handleCloseDetail();
+            setConsoleOpen(false);
+            break;
+          case "ArrowLeft":
+          case "ArrowRight": {
+            const nextId = cycleFavorite([...favIds], selectedId, e.key === "ArrowRight" ? 1 : -1);
+            if (nextId !== null) {
+              const s = satMap.get(nextId);
+              if (s) handleSelect(s);
+            }
+            break;
+          }
+        }
+      }, 0);
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [sim.mode, handlePause, handlePlayLive, handleCloseDetail, favIds, selectedId, allSats, handleSelect]);
+  }, [sim.mode, handlePause, handlePlayLive, handleCloseDetail, favIds, selectedId, satMap, handleSelect]);
 
   /* ---------- Flight Log: eventos reales del motor y la ingesta ---------- */
   const bootLogged = useRef(false);

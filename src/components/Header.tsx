@@ -2,7 +2,7 @@
  * Cabecera: identidad, búsqueda (local + remota en Ivan), procedencia del
  * catálogo (live/seed) y métricas de ingesta (Etapa 2).
  */
-import { useState } from "react";
+import { memo, useState } from "react";
 
 import type { CatalogPayload, Observer } from "../lib/space/types";
 import { fmtDateTime } from "../lib/ui/format";
@@ -28,7 +28,7 @@ interface HeaderProps {
   onCenterObserver: () => void;
 }
 
-export default function Header({
+function Header({
   payload,
   query,
   onQueryChange,
@@ -88,7 +88,10 @@ export default function Header({
           type="search"
           value={query}
           placeholder="Buscar por nombre o NORAD… (Enter busca también en Ivan)"
-          onChange={(e) => onQueryChange(e.target.value)}
+          onChange={(e) => {
+            // Defer state update to avoid blocking INP during typing
+            requestAnimationFrame(() => onQueryChange(e.target.value));
+          }}
           aria-label="Buscar satélite"
         />
         <button type="submit" disabled={searching || !query.trim()}>
@@ -171,3 +174,5 @@ export default function Header({
     </header>
   );
 }
+
+export default memo(Header);

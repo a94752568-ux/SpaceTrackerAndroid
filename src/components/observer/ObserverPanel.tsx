@@ -49,32 +49,25 @@ export function ObserverPanel({ observer, onSave, onClear, date }: ObserverPanel
     setForm(toForm(observer));
   }, [observer]);
 
-  // Obtener elevación automáticamente cuando cambian lat/lon manualmente
-  useEffect(() => {
+  // Obtener elevación manualmente (solo cuando el usuario lo solicita)
+  const fetchElevationForCoords = async () => {
     const lat = Number(form.latitude);
     const lon = Number(form.longitude);
     
-    // Solo obtener elevación si las coordenadas son válidas y el campo de elevación está vacío
-    if (
-      Number.isFinite(lat) && 
-      Number.isFinite(lon) && 
-      lat >= -90 && lat <= 90 && 
-      lon >= -180 && lon <= 180 &&
-      form.elevationM.trim() === "" &&
-      !fetchingElevation
-    ) {
-      setFetchingElevation(true);
-      fetchElevation(lat, lon)
-        .then((elev) => {
-          if (elev != null) {
-            setForm((f) => ({ ...f, elevationM: elev.toString() }));
-          }
-        })
-        .finally(() => {
-          setFetchingElevation(false);
-        });
+    if (!Number.isFinite(lat) || !Number.isFinite(lon) || lat < -90 || lat > 90 || lon < -180 || lon > 180) {
+      setError("Coordenadas inválidas para obtener elevación.");
+      return;
     }
-  }, [form.latitude, form.longitude, form.elevationM, fetchingElevation]);
+
+    setFetchingElevation(true);
+    const elev = await fetchElevation(lat, lon);
+    if (elev != null) {
+      setForm((f) => ({ ...f, elevationM: elev.toString() }));
+    } else {
+      setError("No se pudo obtener la elevación (límite de API o error de red).");
+    }
+    setFetchingElevation(false);
+  };
 
   const set = (k: keyof FormState) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
     setForm((f) => ({ ...f, [k]: e.target.value }));
@@ -184,7 +177,18 @@ export function ObserverPanel({ observer, onSave, onClear, date }: ObserverPanel
             </label>
             <label>
               Elevación (m, opcional)
-              <input value={form.elevationM} onChange={set("elevationM")} inputMode="decimal" placeholder="667" />
+              <div className="st-input-with-btn">
+                <input value={form.elevationM} onChange={set("elevationM")} inputMode="decimal" placeholder="667" />
+                <button
+                  type="button"
+                  className="st-ghost"
+                  onClick={fetchElevationForCoords}
+                  disabled={fetchingElevation}
+                  title="Obtener elevación desde API"
+                >
+                  {fetchingElevation ? "…" : "⬇"}
+                </button>
+              </div>
             </label>
           </div>
           <div className="st-row">
