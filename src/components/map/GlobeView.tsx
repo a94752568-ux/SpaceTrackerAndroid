@@ -1,20 +1,14 @@
 /**
- * GlobeView — globo terráqueo en PROYECCIÓN ORTOGRÁFICA 2D (sin WebGL).
+ * GlobeView — globo terráqueo en PROYECCIÓN ORTOGRÁFICA 2D con respiración canvas.
  *
  * Render: un único <canvas> con:
- *  - caché offscreen de la esfera (halo atmosférico, océano, graticula y
+ *  - caché offscreen de la esfera (halo atmosférico, océano espacial, graticula y
  *    continentes 110 m vía d3-geo + world-atlas), repintada solo cuando cambia
- *    rotación/zoom (clave cuantizada a 0.1°/1 px);
- *  - capa dinámica por frame: flota (frames del Web Worker SGP4), trayectoria,
- *    huella, observador y seleccionado con retícula naranja — todo con
- *    backface culling (cos c > 0).
- * Interacción: arrastre = rotación, rueda = zoom, click/tap = selección
- * (hit-test sobre puntos proyectados), hover = tooltip. Auto-rotación suave
- * en reposo; `tracked` centra el globo en el satélite con lerp.
+ *    rotación/zoom;
+ *  - capa dinámica por frame con respiración (scale), glow sincronizado y doble pasada;
+ *  - controles interactivos: Botón Play/Pause para auto-rotación automática + slider de velocidad.
  */
-import { useEffect, useRef } from "react";
-// Módulos venderizados (ver src/vendor/VENDORED.md): el zip funciona sin
-// reinstalar node_modules en entornos con instalaciones externas antiguas.
+import { useEffect, useRef, useState } from "react";
 import { geoGraticule10, geoOrthographic, geoPath } from "../../vendor/d3-geo/index.js";
 import { feature } from "../../vendor/topojson-client/index.js";
 import landRaw from "../../vendor/land-110m.json?raw";
@@ -36,12 +30,10 @@ interface GlobeViewProps {
   tracked: boolean;
   onSelect: (sat: Sat) => void;
   onUserPan?: () => void;
-  /** Trigger para centrar el globo en el observador (incrementar para activar). */
   centerOnObserverTrigger?: number;
   isGlitching?: boolean;
 }
 
-/* Continentes (54 KB embebidos, parseados una vez) + graticula de 10°. */
 const topo = JSON.parse(landRaw) as unknown as { objects: { land: unknown } };
 const LAND = feature(topo as never, topo.objects.land as never) as unknown as GeoJSON.GeoJsonObject;
 const GRATICULE = geoGraticule10();
@@ -55,11 +47,17 @@ export default function GlobeView({
   onSelect,
   onUserPan,
   centerOnObserverTrigger,
-  isGlitching = false,
 }: GlobeViewProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const wrapRef = useRef<HTMLDivElement | null>(null);
   const tipRef = useRef<HTMLDivElement | null>(null);
+
+  const [autoRotate, setAutoRotate] = useState(false);
+  const [speed, setSpeed] = useState(1.5);
+  const autoRotateRef = useRef(autoRotate);
+  autoRotateRef.current = autoRotate;
+  const speedRef = useRef(speed);
+  speedRef.current = speed;
 
   const viewRef = useRef<OrthoView>({ latDeg: 18, lonDeg: -30, scale: 0 });
   const fleetRef = useRef<FleetClient | null>(null);
@@ -82,8 +80,6 @@ export default function GlobeView({
   trackedRef.current = tracked;
   const observerRef = useRef(observer);
   observerRef.current = observer;
-  const isGlitchingRef = useRef(isGlitching);
-  isGlitchingRef.current = isGlitching;
   const onSelectRef = useRef(onSelect);
   onSelectRef.current = onSelect;
   const onUserPanRef = useRef(onUserPan);
@@ -92,7 +88,6 @@ export default function GlobeView({
   const trackCacheRef = useRef<{ key: string; back: Fix[]; fwd: Fix[]; ring: { latDeg: number; lonDeg: number }[] } | null>(null);
   const lastPostRef = useRef(0);
 
-  /* Catálogo → worker + índice por id. */
   useEffect(() => {
     if (!fleetRef.current) fleetRef.current = new FleetClient();
     fleetRef.current.setCatalog(sats);
@@ -100,7 +95,6 @@ export default function GlobeView({
     frameRef.current = null;
   }, [sats]);
 
-  /* Frames de flota en cubos de 2 s (misma cadencia que el mapa plano). */
   const bucket = Math.floor(now.getTime() / FLEET_UPDATE_MS);
   useEffect(() => {
     const fleet = fleetRef.current;
@@ -112,7 +106,6 @@ export default function GlobeView({
     });
   }, [sats, bucket]);
 
-  /* --- centrado en observador --- */
   useEffect(() => {
     if (centerOnObserverTrigger === undefined || !observer) return;
     centerTriggerRef.current = centerOnObserverTrigger;
@@ -125,7 +118,6 @@ export default function GlobeView({
     centerTriggerRef.current = 0;
   }, [centerTriggerRef.current, observer]);
 
-  /* Bucle de render + interacción. */
   useEffect(() => {
     const canvas = canvasRef.current;
     const wrap = wrapRef.current;
@@ -148,14 +140,22 @@ export default function GlobeView({
       canvas.height = Math.max(1, Math.round(h * dpr));
       off.width = canvas.width;
       off.height = canvas.height;
-      if (viewRef.current.scale === 0) viewRef.current.scale = Math.min(w, h) * 0.36;
+      if (viewRef.current.scale === 0) viewRef.current.scale = Math.min(w, h) * 0.42;
       cacheKey = "";
     };
     resize();
     const ro = new ResizeObserver(resize);
     ro.observe(wrap);
 
-    /* ---- esfera estática (halo + océano + graticula + tierra) en offscreen ---- */
+    // Pause animation when canvas is not visible
+    let isVisible = true;
+    const io = new IntersectionObserver((entries) => {
+      for (const entry of entries) {
+        isVisible = entry.isIntersecting;
+      }
+    }, { threshold: 0.1 });
+    io.observe(canvas);
+
     const drawEarth = () => {
       const v = viewRef.current;
       const cx = w / 2;
@@ -168,17 +168,17 @@ export default function GlobeView({
       octx.setTransform(dpr, 0, 0, dpr, 0, 0);
       octx.clearRect(0, 0, w, h);
 
-      // Halo atmosférico exterior (gradiente radial cian)
-      const halo = octx.createRadialGradient(cx, cy, v.scale * 0.98, cx, cy, v.scale * 1.22);
-      halo.addColorStop(0, "rgba(34, 211, 238, 0.30)");
-      halo.addColorStop(0.45, "rgba(34, 211, 238, 0.10)");
-      halo.addColorStop(1, "rgba(34, 211, 238, 0)");
+      // Halo atmosférico
+      const halo = octx.createRadialGradient(cx, cy, v.scale * 0.98, cx, cy, v.scale * 1.25);
+      halo.addColorStop(0, "rgba(0, 229, 255, 0.35)");
+      halo.addColorStop(0.5, "rgba(255, 103, 0, 0.12)");
+      halo.addColorStop(1, "rgba(0, 0, 0, 0)");
       octx.fillStyle = halo;
       octx.beginPath();
-      octx.arc(cx, cy, v.scale * 1.22, 0, Math.PI * 2);
+      octx.arc(cx, cy, v.scale * 1.25, 0, Math.PI * 2);
       octx.fill();
 
-      // Océano con sombreado de limbo
+      // Océano
       const ocean = octx.createRadialGradient(
         cx - v.scale * 0.35,
         cy - v.scale * 0.35,
@@ -187,9 +187,9 @@ export default function GlobeView({
         cy,
         v.scale,
       );
-      ocean.addColorStop(0, "#0c1626");
-      ocean.addColorStop(0.7, "#071019");
-      ocean.addColorStop(1, "#030508");
+      ocean.addColorStop(0, getComputedStyle(document.documentElement).getPropertyValue('--ocean-dark').trim() || "#081326");
+      ocean.addColorStop(0.7, getComputedStyle(document.documentElement).getPropertyValue('--ocean-mid').trim() || "#040914");
+      ocean.addColorStop(1, getComputedStyle(document.documentElement).getPropertyValue('--ocean-light').trim() || "#010306");
       octx.beginPath();
       path({ type: "Sphere" } as never);
       octx.fillStyle = ocean;
@@ -198,35 +198,53 @@ export default function GlobeView({
       // Graticula técnica
       octx.beginPath();
       path(GRATICULE as never);
-      octx.strokeStyle = "rgba(148, 163, 184, 0.10)";
+      octx.strokeStyle = "rgba(0, 229, 255, 0.12)";
       octx.lineWidth = 0.6;
       octx.stroke();
 
-      // Continentes 110 m
+      // Continentes
       octx.beginPath();
       path(LAND as never);
-      octx.fillStyle = "rgba(148, 163, 184, 0.13)";
+      octx.fillStyle = "rgba(148, 163, 184, 0.16)";
       octx.fill();
-      octx.strokeStyle = "rgba(34, 211, 238, 0.30)";
-      octx.lineWidth = 0.7;
+      octx.strokeStyle = "rgba(0, 229, 255, 0.40)";
+      octx.lineWidth = 0.8;
       octx.stroke();
 
       // Limbo luminoso
       octx.beginPath();
       octx.arc(cx, cy, v.scale, 0, Math.PI * 2);
-      octx.strokeStyle = "rgba(34, 211, 238, 0.55)";
-      octx.lineWidth = 1.2;
-      octx.shadowColor = "rgba(34, 211, 238, 0.8)";
-      octx.shadowBlur = 18;
+      octx.strokeStyle = "rgba(0, 229, 255, 0.70)";
+      octx.lineWidth = 1.4;
+      octx.shadowColor = "rgba(0, 229, 255, 0.9)";
+      octx.shadowBlur = 20;
       octx.stroke();
       octx.shadowBlur = 0;
     };
 
-    /* ------------------------------- frame ------------------------------- */
     let raf = 0;
     let prevT = performance.now();
+    let frameCount = 0;
+    let lastFpsCheck = performance.now();
+    const TARGET_FPS = 30;
+    const FRAME_INTERVAL = 1000 / TARGET_FPS;
+    let lastFrameTime = 0;
+
     const draw = (t: number) => {
       raf = requestAnimationFrame(draw);
+
+      // Skip rendering if not visible
+      if (!isVisible) {
+        return;
+      }
+
+      // FPS limiting
+      const elapsed = t - lastFrameTime;
+      if (elapsed < FRAME_INTERVAL) {
+        return;
+      }
+      lastFrameTime = t - (elapsed % FRAME_INTERVAL);
+
       const dt = Math.min(100, t - prevT);
       prevT = t;
       const v = viewRef.current;
@@ -234,10 +252,11 @@ export default function GlobeView({
       const cy = h / 2;
       const sel = selectedRef.current;
 
-      // SIN rotación perpetua: el globo queda estático en la última posición
-      // del usuario. El centro solo se interpola suavemente (constante de
-      // tiempo 250 ms, independiente de FPS) cuando hay satélite seleccionado
-      // Y el modo seguimiento (lock) activo.
+      // SIN rotación perpetua: el globo queda estático por defecto.
+      if (autoRotateRef.current) {
+        v.lonDeg = wrapLonDeg(v.lonDeg + speedRef.current * (dt / 1000));
+      }
+
       if (trackedRef.current && sel) {
         const fix = getFix(sel, nowRef.current);
         if (fix) {
@@ -259,12 +278,25 @@ export default function GlobeView({
 
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       ctx.clearRect(0, 0, w, h);
+
+      const reducedMotion = typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+      const time = performance.now() / 1000;
+      const period = 3.4;
+      const amplitude = reducedMotion ? 0 : 0.018;
+      const breath = reducedMotion ? 0.5 : (Math.sin((time * Math.PI * 2) / period) + 1) / 2;
+      const scale = 1 + (breath - 0.5) * 2 * amplitude;
+
+      ctx.save();
+      ctx.translate(cx, cy);
+      ctx.scale(scale, scale);
+      ctx.translate(-cx, -cy);
+
       ctx.drawImage(off, 0, 0, w, h);
       hitsRef.current.length = 0;
 
       const proj = (lat: number, lon: number) => orthoProject(lat, lon, v, cx, cy);
 
-      // Trayectoria + huella del seleccionado (caché por minuto)
       const minuteKey = `${sel?.id ?? 0}|${Math.floor(nowRef.current.getTime() / 60000)}`;
       if (sel && trackCacheRef.current?.key !== minuteKey) {
         const periodMs = 92 * 60000;
@@ -276,8 +308,17 @@ export default function GlobeView({
         };
       }
       const tc = sel ? trackCacheRef.current : null;
+
+      ctx.globalCompositeOperation = "lighter";
+      const glowBaseAlpha = reducedMotion ? 0.4 : 0.35 + breath * 0.60;
+      const glowBlur = reducedMotion ? 20 : 16 + breath * 34;
+      const glowColor = `rgba(0, 229, 255, ${glowBaseAlpha})`;
+
       if (tc) {
-        const drawTrack = (pts: Fix[], style: string, width: number) => {
+        const drawTrackPasses = (pts: Fix[], style: string, width: number) => {
+          ctx.save();
+          ctx.shadowColor = glowColor;
+          ctx.shadowBlur = glowBlur * 1.5;
           ctx.beginPath();
           let pen = false;
           let prev: { x: number; y: number } | null = null;
@@ -288,28 +329,39 @@ export default function GlobeView({
               prev = p;
               continue;
             }
-            if (!pen) {
-              ctx.moveTo(p.x, p.y);
-              pen = true;
-            } else {
-              ctx.lineTo(p.x, p.y);
+            if (!pen) { ctx.moveTo(p.x, p.y); pen = true; }
+            else { ctx.lineTo(p.x, p.y); }
+            prev = p;
+          }
+          ctx.strokeStyle = style;
+          ctx.lineWidth = width * 2;
+          ctx.stroke();
+          ctx.restore();
+
+          ctx.beginPath();
+          pen = false;
+          prev = null;
+          for (const f of pts) {
+            const p = proj(f.latDeg, f.lonDeg);
+            if (!p.visible || (prev && Math.hypot(p.x - prev.x, p.y - prev.y) > v.scale * 0.9)) {
+              pen = false;
+              prev = p;
+              continue;
             }
+            if (!pen) { ctx.moveTo(p.x, p.y); pen = true; }
+            else { ctx.lineTo(p.x, p.y); }
             prev = p;
           }
           ctx.strokeStyle = style;
           ctx.lineWidth = width;
           ctx.stroke();
         };
-        drawTrack(tc.back, "rgba(34, 211, 238, 0.16)", 1);
-        drawTrack(tc.fwd, "rgba(34, 211, 238, 0.5)", 1.4);
-        drawTrack(
-          [...tc.ring, tc.ring[0]] as unknown as Fix[],
-          "rgba(34, 211, 238, 0.35)",
-          1,
-        );
+
+        drawTrackPasses(tc.back, "rgba(0, 229, 255, 0.25)", 1);
+        drawTrackPasses(tc.fwd, "rgba(255, 103, 0, 0.8)", 1.8);
+        drawTrackPasses([...tc.ring, tc.ring[0]] as unknown as Fix[], "rgba(0, 229, 255, 0.5)", 1.2);
       }
 
-      // Flota desde el worker (backface culling)
       const frame = frameRef.current;
       if (frame) {
         const { ids, data } = frame;
@@ -320,24 +372,28 @@ export default function GlobeView({
           if (data[o + 5] !== 1) continue;
           const p = proj(data[o], data[o + 1]);
           if (!p.visible) continue;
-          const jitX = isGlitchingRef.current ? (Math.random() - 0.5) * 4 : 0;
-          const jitY = isGlitchingRef.current ? (Math.random() - 0.5) * 4 : 0;
-          const px = p.x + jitX;
-          const py = p.y + jitY;
+          const px = p.x;
+          const py = p.y;
           const color = GROUP_COLORS[byIdRef.current.get(id)?.group ?? "other"];
+
+          ctx.save();
+          ctx.shadowColor = glowColor;
+          ctx.shadowBlur = glowBlur;
           ctx.beginPath();
-          ctx.arc(px, py, 3.2, 0, Math.PI * 2);
-          ctx.fillStyle = color + "2e";
+          ctx.arc(px, py, 3.5, 0, Math.PI * 2);
+          ctx.fillStyle = color + "44";
           ctx.fill();
+          ctx.restore();
+
           ctx.beginPath();
-          ctx.arc(px, py, 1.6, 0, Math.PI * 2);
+          ctx.arc(px, py, 1.8, 0, Math.PI * 2);
           ctx.fillStyle = color;
           ctx.fill();
+
           hitsRef.current.push({ x: px, y: py, id });
         }
       }
 
-      // Observador
       const obs = observerRef.current;
       if (obs) {
         const p = proj(obs.latitude, obs.longitude);
@@ -345,23 +401,22 @@ export default function GlobeView({
           ctx.save();
           ctx.translate(p.x, p.y);
           ctx.rotate(Math.PI / 4);
-          ctx.fillStyle = "#ff6700";
-          ctx.shadowColor = "rgba(255,103,0,.8)";
-          ctx.shadowBlur = 8;
-          ctx.fillRect(-3, -3, 6, 6);
+          ctx.fillStyle = "#ff6700"; // Canvas colors kept as fallback (matches --selection-orange)
+          ctx.shadowColor = "rgba(255,103,0,.9)";
+          ctx.shadowBlur = glowBlur;
+          ctx.fillRect(-3.5, -3.5, 7, 7);
           ctx.restore();
         }
       }
 
-      // Luna
       const moon = getMoonPosition(nowRef.current);
       const moonProj = proj(moon.lat, moon.lon);
       if (moonProj.visible) {
         ctx.save();
         ctx.translate(moonProj.x, moonProj.y);
-        ctx.shadowColor = "rgba(226, 232, 240, 0.8)";
-        ctx.shadowBlur = 10;
-        ctx.fillStyle = "#e2e8f0";
+        ctx.shadowColor = "rgba(226, 232, 240, 0.9)";
+        ctx.shadowBlur = glowBlur;
+        ctx.fillStyle = "#e2e8f0"; // Canvas colors kept as fallback (matches --moon-color)
         ctx.beginPath();
         ctx.arc(0, 0, 4.5, 0, Math.PI * 2);
         ctx.fill();
@@ -373,30 +428,33 @@ export default function GlobeView({
         ctx.restore();
       }
 
-      // Seleccionado: halo pulsante + retícula naranja + núcleo
       if (sel) {
         const fix = getFix(sel, nowRef.current);
         if (fix) {
           const p = proj(fix.latDeg, fix.lonDeg);
           if (p.visible) {
-            const pulse = 1 + 0.12 * Math.sin(t / 320);
-            const halo = ctx.createRadialGradient(p.x, p.y, 2, p.x, p.y, 26 * pulse);
-            halo.addColorStop(0, "rgba(255,103,0,0.42)");
+            ctx.save();
+            ctx.shadowColor = "rgba(255, 103, 0, 0.9)";
+            ctx.shadowBlur = glowBlur * 1.5;
+
+            const pulse = 1 + 0.14 * Math.sin(t / 300);
+            const halo = ctx.createRadialGradient(p.x, p.y, 2, p.x, p.y, 28 * pulse);
+            halo.addColorStop(0, "rgba(255,103,0,0.5)");
             halo.addColorStop(1, "rgba(255,103,0,0)");
             ctx.fillStyle = halo;
             ctx.beginPath();
-            ctx.arc(p.x, p.y, 26 * pulse, 0, Math.PI * 2);
+            ctx.arc(p.x, p.y, 28 * pulse, 0, Math.PI * 2);
             ctx.fill();
 
-            ctx.save();
             ctx.strokeStyle = "#ff6700";
-            ctx.lineWidth = 1;
+            ctx.lineWidth = 1.2;
             ctx.setLineDash([4, 4]);
-            ctx.lineDashOffset = -t / 40; // punteado móvil
+            ctx.lineDashOffset = -t / 35;
             ctx.beginPath();
-            ctx.arc(p.x, p.y, 13, 0, Math.PI * 2);
+            ctx.arc(p.x, p.y, 14, 0, Math.PI * 2);
             ctx.stroke();
             ctx.setLineDash([]);
+
             for (const [sx, sy] of [
               [-1, -1],
               [1, -1],
@@ -404,25 +462,25 @@ export default function GlobeView({
               [-1, 1],
             ] as const) {
               ctx.beginPath();
-              ctx.moveTo(p.x + sx * 17, p.y + sy * 17 - sy * 6);
-              ctx.lineTo(p.x + sx * 17, p.y + sy * 17);
-              ctx.lineTo(p.x + sx * 17 - sx * 6, p.y + sy * 17);
+              ctx.moveTo(p.x + sx * 18, p.y + sy * 18 - sy * 6);
+              ctx.lineTo(p.x + sx * 18, p.y + sy * 18);
+              ctx.lineTo(p.x + sx * 18 - sx * 6, p.y + sy * 18);
               ctx.stroke();
             }
-            ctx.shadowColor = "rgba(255,103,0,.9)";
-            ctx.shadowBlur = 12;
+
             ctx.fillStyle = "#ffb27a";
             ctx.beginPath();
-            ctx.arc(p.x, p.y, 3, 0, Math.PI * 2);
+            ctx.arc(p.x, p.y, 3.5, 0, Math.PI * 2);
             ctx.fill();
             ctx.restore();
           }
         }
       }
+
+      ctx.restore();
     };
     raf = requestAnimationFrame(draw);
 
-    /* ---------------------------- interacción ---------------------------- */
     const hitAt = (x: number, y: number) => {
       let best: { x: number; y: number; id: number } | null = null;
       let bd = 14;
@@ -443,7 +501,7 @@ export default function GlobeView({
       dragRef.current = { on: true, x: e.clientX, y: e.clientY, moved: 0 };
       canvas.setPointerCapture(e.pointerId);
       canvas.classList.add("st-globe-drag");
-      onUserPanRef.current?.(); // el arrastre manual libera el seguimiento
+      onUserPanRef.current?.();
     };
     const move = (e: PointerEvent) => {
       const { x, y } = local(e);
@@ -453,7 +511,6 @@ export default function GlobeView({
         dragRef.current.x = e.clientX;
         dragRef.current.y = e.clientY;
         dragRef.current.moved += Math.abs(dx) + Math.abs(dy);
-        // Invertir dx para que arrastrar a la derecha rote el globo hacia el oeste (comportamiento natural)
         const rot = dragToRotation(viewRef.current, -dx, dy);
         viewRef.current.latDeg = rot.latDeg;
         viewRef.current.lonDeg = rot.lonDeg;
@@ -482,14 +539,13 @@ export default function GlobeView({
       const moved = dragRef.current.moved;
       dragRef.current.on = false;
       canvas.classList.remove("st-globe-drag");
-      if (!wasDrag || moved >= 4) return; // arrastre real: el usuario ya tomó el control
+      if (!wasDrag || moved >= 4) return;
       const { x, y } = local(e);
       const hit = hitAt(x, y);
       if (hit) {
         const s = byIdRef.current.get(hit.id);
         if (s) onSelectRef.current(s);
       } else {
-        // Clic en área vacía: el globo se detiene en su posición actual.
         onUserPanRef.current?.();
       }
     };
@@ -507,6 +563,7 @@ export default function GlobeView({
     return () => {
       cancelAnimationFrame(raf);
       ro.disconnect();
+      io.disconnect();
       canvas.removeEventListener("pointerdown", down);
       canvas.removeEventListener("pointermove", move);
       canvas.removeEventListener("pointerup", up);
@@ -519,19 +576,28 @@ export default function GlobeView({
 
   return (
     <div className="st-globe-wrap" ref={wrapRef}>
-      <canvas
-        ref={canvasRef}
-        className="st-globe"
-        style={
-          isGlitching
-            ? {
-                filter:
-                  "hue-rotate(90deg) contrast(180%) drop-shadow(2px 0px 0px #FF2DAA) drop-shadow(-2px 0px 0px #00E5FF)",
-              }
-            : undefined
-        }
-        aria-label="Globo ortográfico de satélites"
-      />
+      <canvas ref={canvasRef} className="st-globe" aria-label="Globo ortográfico de satélites" />
+      <div className="st-globe-controls">
+        <button
+          className={autoRotate ? "st-primary" : "st-ghost"}
+          onClick={() => setAutoRotate((v) => !v)}
+          title="Auto-rotación del globo"
+        >
+          {autoRotate ? "⏸ Pausa" : "▶ Girar"}
+        </button>
+        <input
+          type="range"
+          min="0.2"
+          max="5"
+          step="0.2"
+          value={speed}
+          onChange={(e) => setSpeed(parseFloat(e.target.value))}
+          title="Velocidad de rotación"
+        />
+        <span style={{ fontFamily: "var(--font-mono)", fontSize: "11px", color: "var(--accent)" }}>
+          {speed.toFixed(1)}x
+        </span>
+      </div>
       <div ref={tipRef} className="st-tip st-globe-tip" hidden />
     </div>
   );

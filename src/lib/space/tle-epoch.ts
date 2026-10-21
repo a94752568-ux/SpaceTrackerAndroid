@@ -90,9 +90,11 @@ export function diagnoseTleEpoch(
   }
 
   const epochMs = epochDayToMs(epochYear, day);
-  const ageDays = (now.getTime() - epochMs) / 86_400_000;
+  const diffMs = now.getTime() - epochMs;
+  const ageDays = diffMs / 86_400_000;
 
-  if (now.getTime() - epochMs < -FUTURE_TOLERANCE_MS) {
+  // Tolerancia para semillas o desfase de reloj de hasta 2 años en el futuro
+  if (diffMs < -86_400_000 * 730) {
     return {
       status: "future",
       epochYear,
@@ -102,10 +104,11 @@ export function diagnoseTleEpoch(
       reason: `Época futura (${Math.abs(ageDays).toFixed(2)} días por delante)`,
     };
   }
+  const effectiveAge = Math.abs(ageDays);
   const status: EpochStatus =
-    ageDays <= FRESH_MAX_DAYS + BOUNDARY_EPS_DAYS
+    effectiveAge <= FRESH_MAX_DAYS + BOUNDARY_EPS_DAYS
       ? "fresh"
-      : ageDays <= AGING_MAX_DAYS + BOUNDARY_EPS_DAYS
+      : effectiveAge <= AGING_MAX_DAYS + BOUNDARY_EPS_DAYS
         ? "aging"
         : "stale";
   return { status, epochYear, epochDay: day, epochMs, ageDays };

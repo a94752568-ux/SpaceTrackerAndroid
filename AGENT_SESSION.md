@@ -1,16 +1,15 @@
 # INFORME DE ESTADO PARA AGENTE DE IA (SESSION CONTEXT)
-> **Generado automáticamente:** 2026-10-21T01:47:52.557Z
+> **Generado automáticamente:** 2026-10-21T23:19:51.249Z
 
 ## 1. Identificación del Proyecto
 * **Nombre:** spacetracker
 * **Versión:** 1.0.0
-* **Rama Git Actual:** `android/playstore-prep`
-* **Último Commit:** `92d7042 - build(android): Gradle 8.14.5 y JDK 21 para el daemon (generado por Android Studio) (0 seconds ago)`
+* **Rama Git Actual:** `ui/responsive-movil`
+* **Último Commit:** `82d0e69 - wip: snapshot responsive móvil + Android Studio (respaldo inicial) (1 second ago)`
 
 ## 2. Archivos Modificados / Pendientes (`git status`)
 ```text
-?? .idea/deploymentTargetSelector.xml
-?? android/.idea/
+Sin cambios pendientes (Working tree clean)
 ```
 
 ## 3. Estado de Módulos y Arquitectura

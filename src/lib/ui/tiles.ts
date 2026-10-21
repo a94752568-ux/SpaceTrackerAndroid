@@ -58,8 +58,6 @@ export const BASE_LAYERS: BaseLayerSpec[] = [
     name: "Satelital oscuro (Esri Imagery)",
     layers: [
       {
-        // URL pública y gratuita de Esri, sin API key (verificada el 2026-10-18:
-        // tile 200 sin marca de agua). Se atenúa con CSS para el tema oscuro.
         url: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
         attribution: ATTRIB_ESRI_IMAGERY,
         maxZoom: 17,
@@ -68,7 +66,7 @@ export const BASE_LAYERS: BaseLayerSpec[] = [
   },
 ];
 
-export const DEFAULT_BASE_ID = "esri-dark";
+export const DEFAULT_BASE_ID = "esri-sat";
 
 /**
  * Capas superpuestas conmutables desde el mismo control (checkbox):

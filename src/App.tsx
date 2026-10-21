@@ -50,6 +50,7 @@ import { DEFAULT_BASE_ID } from "./lib/ui/tiles";
 import { installNativeGuards } from "./lib/ui/native";
 import { useFps } from "./lib/ui/useFps";
 import { useKioskMode } from "./lib/ui/useKioskMode";
+import { useViewport } from "./lib/ui/useViewport";
 
 interface SimState {
   mode: "live" | "frozen";
@@ -57,6 +58,11 @@ interface SimState {
 }
 
 export default function App() {
+  const viewport = useViewport();
+  const isCompact = viewport.sizeClass === "compact";
+  const [compactTab, setCompactTab] = useState<"catalog" | "radar" | "time" | "layers" | "observer" | null>(null);
+  const [showHint, setShowHint] = useState(() => !localStorage.getItem("spacetracker:dismiss-hint"));
+
   const [payload, setPayload] = useState<CatalogPayload | null>(null);
   const [externals, setExternals] = useState<Sat[]>([]);
   const [searching, setSearching] = useState(false);
@@ -88,6 +94,35 @@ export default function App() {
   useEffect(() => {
     const id = window.setInterval(() => setRealNow(new Date()), 1000);
     return () => window.clearInterval(id);
+  }, []);
+
+  /* Inicializar tema guardado (Neon / Amber) */
+  useEffect(() => {
+    const saved = localStorage.getItem("spacetracker:theme") || "neon";
+    document.documentElement.setAttribute("data-theme", saved);
+  }, []);
+
+  /* Evitar que la pantalla se apague (Screen Wake Lock API) */
+  useEffect(() => {
+    let wakeLock: any = null;
+    async function requestWakeLock() {
+      if (typeof navigator !== "undefined" && "wakeLock" in navigator) {
+        try {
+          wakeLock = await (navigator as any).wakeLock.request("screen");
+        } catch {
+          // Ignorado si el sistema deniega el wake lock
+        }
+      }
+    }
+    void requestWakeLock();
+    const handleVis = () => {
+      if (document.visibilityState === "visible") void requestWakeLock();
+    };
+    document.addEventListener("visibilitychange", handleVis);
+    return () => {
+      document.removeEventListener("visibilitychange", handleVis);
+      wakeLock?.release?.().catch(() => {});
+    };
   }, []);
 
   /* Geolocalización silenciosa al iniciar si no hay observador explícitamente guardado */
@@ -257,10 +292,9 @@ export default function App() {
   }, [selected]);
 
   const handleSelect = useCallback((s: Sat) => {
-    // Use React transition for non-urgent selection update
     startTransition(() => {
       setSelectedId(s.id);
-      setTracked(true); // flyTo + centrado continuo hasta que el operador arrastre
+      setTracked(true);
     });
   }, [startTransition]);
 
@@ -307,7 +341,54 @@ export default function App() {
   }, [observer]);
 
   const handleCenterObserver = useCallback(() => {
-    if (!observer) return;
+    if (!observer) {
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+          async (pos) => {
+            const lat = pos.coords.latitude;
+            const lon = pos.coords.longitude;
+            let cityName = "Mi ubicación GPS";
+            const resolved = await fetchCityName(lat, lon);
+            if (resolved) cityName = resolved;
+
+            const newObs: Observer = {
+              name: cityName,
+              latitude: lat,
+              longitude: lon,
+              timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC",
+            };
+            setObserver(newObs);
+            saveObserver(newObs);
+            setCenterOnObserverTrigger((prev) => prev + 1);
+            teleLog.push("SYS", `GPS actual: ${cityName} (${lat.toFixed(2)}°, ${lon.toFixed(2)}°)`);
+          },
+          (err) => {
+            teleLog.push("WARN", `Ubicación no disponible (${err.message}). Usando Madrid por defecto.`);
+            const madrid: Observer = {
+              name: "Madrid",
+              latitude: 40.4168,
+              longitude: -3.7038,
+              timezone: "Europe/Madrid",
+            };
+            setObserver(madrid);
+            saveObserver(madrid);
+            setCenterOnObserverTrigger((prev) => prev + 1);
+          },
+          { timeout: 6000, enableHighAccuracy: true, maximumAge: 60000 },
+        );
+      } else {
+        const madrid: Observer = {
+          name: "Madrid",
+          latitude: 40.4168,
+          longitude: -3.7038,
+          timezone: "Europe/Madrid",
+        };
+        setObserver(madrid);
+        saveObserver(madrid);
+        setCenterOnObserverTrigger((prev) => prev + 1);
+      }
+      return;
+    }
     setCenterOnObserverTrigger((prev) => prev + 1);
     teleLog.push("SYS", `Centrando en ${observer.name}`);
   }, [observer]);
@@ -336,7 +417,6 @@ export default function App() {
         if (e.key === "Escape") (e.target as HTMLElement).blur();
         return;
       }
-      // Synchronous preventDefault for immediate feedback
       switch (e.key) {
         case " ":
         case "/":
@@ -345,7 +425,6 @@ export default function App() {
           e.preventDefault();
           break;
       }
-      // Defer state updates to setTimeout(0) for INP optimization (allows paint before execution)
       setTimeout(() => {
         switch (e.key) {
           case " ":
@@ -436,10 +515,6 @@ export default function App() {
     return () => window.clearInterval(id);
   }, []);
 
-  /**
-   * Tier DOM del mapa: seleccionado + favoritos + categoría activa, con tope
-   * duro MAX_DOM_MARKERS para no devolver el cuello de botella al DOM.
-   */
   const [activeGroup, setActiveGroup] = useState<GroupId | null>(null);
   const domIds = useMemo<Set<number>>(() => {
     const set = new Set<number>();
@@ -511,10 +586,29 @@ export default function App() {
         isGlitching={isGlitching}
         onToggleGlitch={() => setIsGlitching((v) => !v)}
         onCenterObserver={handleCenterObserver}
+        sizeClass={viewport.sizeClass}
+        onOpenCatalog={() => setCompactTab("catalog")}
       />
       {/* Zona intermedia del flujo (flex:1): mapa al 100 % y HUD flotante
           anclado AQUÍ — nunca colisiona con cabecera ni consola */}
-      <div className="st-viewport">
+      <div className={`st-viewport ${isCompact ? "is-compact" : ""}`}>
+        {isCompact && showHint && !selected && (
+          <div className="st-onboarding-hint">
+            <span>💡 Toca cualquier satélite en el mapa o abre Catálogo para comenzar.</span>
+            <button className="st-iconbtn" onClick={() => { setShowHint(false); localStorage.setItem("spacetracker:dismiss-hint", "1"); }}>×</button>
+          </div>
+        )}
+
+        {isCompact && (
+          <button
+            className="st-map-fab-toggle"
+            onClick={() => setView((v) => (v === "map" ? "globe" : "map"))}
+            title={view === "map" ? "Cambiar a Globo 3D" : "Cambiar a Mapa 2D"}
+          >
+            {view === "map" ? "🌍 Globo" : "🗺️ Mapa"}
+          </button>
+        )}
+
         <div className="st-map-area">
           {view === "map" ? (
             <MapView
@@ -532,7 +626,10 @@ export default function App() {
               onUserPan={() => setTracked(false)}
               onSetObserver={handleSetObserver}
               centerOnObserverTrigger={centerOnObserverTrigger}
-              onSelect={handleSelect}
+              onSelect={(s) => {
+                handleSelect(s);
+                if (isCompact) setCompactTab("radar");
+              }}
               isGlitching={isGlitching}
             />
           ) : (
@@ -543,7 +640,10 @@ export default function App() {
                 observer={observer}
                 now={now}
                 tracked={tracked}
-                onSelect={handleSelect}
+                onSelect={(s) => {
+                  handleSelect(s);
+                  if (isCompact) setCompactTab("radar");
+                }}
                 onUserPan={() => setTracked(false)}
                 centerOnObserverTrigger={centerOnObserverTrigger}
                 isGlitching={isGlitching}
@@ -551,73 +651,201 @@ export default function App() {
             </Suspense>
           )}
         </div>
-        <button
-          className="st-panel-tab left"
-          onClick={toggleLeft}
-          title={panels.left ? "Colapsar panel de misión" : "Expandir panel de misión"}
-          aria-label="colapsar o expandir panel de misión"
-        >
-          {panels.left ? "«" : "»"}
-        </button>
-        <Sidebar
-          sats={allSats}
-          selectedId={selectedId}
-          fav={fav}
-          favIds={favIds}
-          query={query}
-          externals={externals.filter((e) => !payload?.sats.some((s) => s.id === e.id))}
-          onSelect={handleSelect}
-          onToggleRadar={handleToggleRadar}
-          onRenameList={handleRenameList}
-          onDeleteList={handleDeleteList}
-          onRemoveFromList={handleToggleSatInList}
-          observer={observer}
-          date={now}
-          onSaveObserver={handleSaveObserver}
-          onClearObserver={handleClearObserver}
-        />
-        {/* Drawer de detalles: OCULTO por defecto; slide-in glass al seleccionar */}
-        <div className={selected ? "st-right open hud-panel" : "st-right hud-panel"} aria-hidden={!selected}>
-          {drawerSat && observer && <SkyRadar sat={drawerSat} observer={observer} now={now} />}
-          {drawerSat && (
-            <SatDetail
-              sat={drawerSat}
-              observer={observer}
-              now={now}
+
+        {!isCompact && (
+          <button
+            className="st-panel-tab left"
+            onClick={toggleLeft}
+            title={panels.left ? "Colapsar panel de misión" : "Expandir panel de misión"}
+            aria-label="colapsar o expandir panel de misión"
+          >
+            {panels.left ? "«" : "»"}
+          </button>
+        )}
+
+        {/* Sidebar: normal or compact bottom sheet */}
+        {(!isCompact || compactTab === "catalog") && (
+          <div className={isCompact ? "st-bottom-sheet" : ""}>
+            {isCompact && <div className="st-sheet-handle" onClick={() => setCompactTab(null)} />}
+            <Sidebar
+              sats={allSats}
+              selectedId={selectedId}
               fav={fav}
-              tracked={tracked}
-              onToggleSatInList={handleToggleSatInList}
-              onCreateList={handleCreateList}
-              onToggleTrack={() => setTracked((v) => !v)}
-              onClose={handleCloseDetail}
+              favIds={favIds}
+              query={query}
+              externals={externals.filter((e) => !payload?.sats.some((s) => s.id === e.id))}
+              onSelect={(s) => {
+                handleSelect(s);
+                if (isCompact) setCompactTab("radar");
+              }}
+              onToggleRadar={handleToggleRadar}
+              onRenameList={handleRenameList}
+              onDeleteList={handleDeleteList}
+              onRemoveFromList={handleToggleSatInList}
+              observer={observer}
+              date={now}
+              onSaveObserver={handleSaveObserver}
+              onClearObserver={handleClearObserver}
             />
-          )}
-        </div>
-        <Dock
-          now={now}
-          realNow={realNow}
-          mode={sim.mode}
-          timezone={observer?.timezone ?? "UTC"}
-          onPlayLive={handlePlayLive}
-          onPause={handlePause}
-          onShiftHours={handleShiftHours}
-          onScrub={handleScrub}
-          baseId={baseId}
-          onBase={handleBase}
-          overlays={overlays}
-          onOverlays={handleOverlays}
-          activeGroup={activeGroup}
-          onToggleActiveGroup={handleToggleActiveGroup}
-          consoleOpen={consoleOpen}
-          onConsoleToggle={() => setConsoleOpen((v) => !v)}
-          view={view}
-          onViewToggle={() => setView((v) => (v === "map" ? "globe" : "map"))}
-          source={payload?.source ?? "seed"}
-          uniqueCount={allSats.length}
-          sgp4={fleetInfo}
-          tleHealth={tleHealth}
-          fps={fps}
-        />
+          </div>
+        )}
+
+        {/* Drawer de detalles / Radar: normal o compact bottom sheet */}
+        {((!isCompact && selected) || (isCompact && (selected && compactTab === "radar"))) && (
+          <div className={isCompact ? "st-bottom-sheet open" : selected ? "st-right open hud-panel" : "st-right hud-panel"} aria-hidden={!selected && compactTab !== "radar"}>
+            {isCompact && <div className="st-sheet-handle" onClick={() => setCompactTab(null)} />}
+            {drawerSat && observer && <SkyRadar sat={drawerSat} observer={observer} now={now} />}
+            {drawerSat && (
+              <SatDetail
+                sat={drawerSat}
+                observer={observer}
+                now={now}
+                fav={fav}
+                tracked={tracked}
+                onToggleSatInList={handleToggleSatInList}
+                onCreateList={handleCreateList}
+                onToggleTrack={() => setTracked((v) => !v)}
+                onClose={() => {
+                  handleCloseDetail();
+                  if (isCompact) setCompactTab(null);
+                }}
+              />
+            )}
+          </div>
+        )}
+
+        {/* Compact bottom sheets for time / layers */}
+        {isCompact && compactTab === "time" && (
+          <div className="st-bottom-sheet">
+            <div className="st-sheet-handle" onClick={() => setCompactTab(null)} />
+            <div className="st-sheet-head">
+              <h3>Control de Tiempo</h3>
+              <button className="st-iconbtn" onClick={() => setCompactTab(null)}>×</button>
+            </div>
+            <div style={{ padding: "10px", display: "flex", flexDirection: "column", gap: "10px" }}>
+              <p style={{ margin: 0, fontSize: "12px" }}>Modo: {sim.mode}</p>
+              <button className="st-primary" onClick={sim.mode === "live" ? handlePause : handlePlayLive}>
+                {sim.mode === "live" ? "Pausar / Congelar" : "Volver a LIVE"}
+              </button>
+              <div style={{ display: "flex", gap: "6px" }}>
+                <button className="st-ghost" onClick={() => handleShiftHours(-1)}>-1h</button>
+                <button className="st-ghost" onClick={() => handleShiftHours(1)}>+1h</button>
+                <button className="st-ghost" onClick={() => handleShiftHours(24)}>+24h</button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {isCompact && compactTab === "layers" && (
+          <div className="st-bottom-sheet">
+            <div className="st-sheet-handle" onClick={() => setCompactTab(null)} />
+            <div className="st-sheet-head">
+              <h3>Capas, Vistas y Leyenda</h3>
+              <button className="st-iconbtn" onClick={() => setCompactTab(null)}>×</button>
+            </div>
+            <div style={{ padding: "10px", display: "flex", flexDirection: "column", gap: "12px", fontSize: "13px" }}>
+              <button className="st-primary" onClick={() => setView((v) => (v === "map" ? "globe" : "map"))}>
+                Vista actual: {view === "map" ? "Mapa Leaflet 2D" : "Globo 3D"}
+              </button>
+              <button className="st-ghost" onClick={() => handleBase(baseId === DEFAULT_BASE_ID ? "dark" : DEFAULT_BASE_ID)}>
+                Cambiar Tesela (Actual: {baseId})
+              </button>
+              <div style={{ borderTop: "1px solid var(--line)", paddingTop: "8px" }}>
+                <strong style={{ color: "var(--accent)", display: "block", marginBottom: "6px" }}>Leyenda de colores:</strong>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "6px", fontSize: "12px" }}>
+                  <div><i style={{ display: "inline-block", width: "10px", height: "10px", background: "var(--group-crew)", borderRadius: "50%", marginRight: "6px" }} /> Tripulación / Estación</div>
+                  <div><i style={{ display: "inline-block", width: "10px", height: "10px", background: "var(--group-starlink)", borderRadius: "50%", marginRight: "6px" }} /> Starlink / Megaconst.</div>
+                  <div><i style={{ display: "inline-block", width: "10px", height: "10px", background: "var(--group-weather)", borderRadius: "50%", marginRight: "6px" }} /> Ciencia / Clima</div>
+                  <div><i style={{ display: "inline-block", width: "10px", height: "10px", background: "var(--group-science)", borderRadius: "50%", marginRight: "6px" }} /> Navegación / GPS</div>
+                  <div><i style={{ display: "inline-block", width: "10px", height: "10px", background: "var(--group-other)", borderRadius: "50%", marginRight: "6px" }} /> Otros / Misiones</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {!isCompact && (
+          <Dock
+            now={now}
+            realNow={realNow}
+            mode={sim.mode}
+            timezone={observer?.timezone ?? "UTC"}
+            onPlayLive={handlePlayLive}
+            onPause={handlePause}
+            onShiftHours={handleShiftHours}
+            onScrub={handleScrub}
+            baseId={baseId}
+            onBase={handleBase}
+            overlays={overlays}
+            onOverlays={handleOverlays}
+            activeGroup={activeGroup}
+            onToggleActiveGroup={handleToggleActiveGroup}
+            consoleOpen={consoleOpen}
+            onConsoleToggle={() => setConsoleOpen((v) => !v)}
+            view={view}
+            onViewToggle={() => setView((v) => (v === "map" ? "globe" : "map"))}
+            source={payload?.source ?? "seed"}
+            uniqueCount={allSats.length}
+            sgp4={fleetInfo}
+            tleHealth={tleHealth}
+            fps={fps}
+          />
+        )}
+
+        {isCompact && (
+          <nav className="st-bottom-nav" aria-label="Navegación principal">
+            <button
+              className={`st-bottom-nav-btn ${compactTab === "catalog" ? "active" : ""}`}
+              onClick={() => setCompactTab((c) => (c === "catalog" ? null : "catalog"))}
+              aria-label={compactTab === "catalog" ? "Cerrar catálogo" : "Abrir catálogo"}
+              aria-pressed={compactTab === "catalog"}
+            >
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+                <circle cx="12" cy="12" r="9"/>
+                <path d="M3 12h18M12 3a15.3 15.3 0 0 1 4 9 15.3 15.3 0 0 1-4 9 15.3 15.3 0 0 1-4-9 15.3 15.3 0 0 1 4-9z"/>
+              </svg>
+              Catálogo
+            </button>
+            <button
+              className={`st-bottom-nav-btn ${compactTab === "radar" || selected ? "active" : ""}`}
+              onClick={() => setCompactTab((c) => (c === "radar" ? null : "radar"))}
+              aria-label={compactTab === "radar" ? "Cerrar radar" : "Abrir radar de satélites"}
+              aria-pressed={compactTab === "radar" || selected !== null}
+            >
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+                <path d="M12 2a10 10 0 0 1 7.07 17.07M12 6a6 6 0 0 1 4.24 10.24M12 10a2 2 0 0 1 1.41 3.41"/>
+                <circle cx="12" cy="18" r="1"/>
+              </svg>
+              Radar
+            </button>
+            <button
+              className={`st-bottom-nav-btn ${compactTab === "time" ? "active" : ""}`}
+              onClick={() => setCompactTab((c) => (c === "time" ? null : "time"))}
+              aria-label={compactTab === "time" ? "Cerrar control de tiempo" : "Abrir control de tiempo"}
+              aria-pressed={compactTab === "time"}
+            >
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+                <circle cx="12" cy="12" r="10"/>
+                <polyline points="12 6 12 12 16 14"/>
+              </svg>
+              Tiempo
+            </button>
+            <button
+              className={`st-bottom-nav-btn ${compactTab === "layers" ? "active" : ""}`}
+              onClick={() => setCompactTab((c) => (c === "layers" ? null : "layers"))}
+              aria-label={compactTab === "layers" ? "Cerrar capas" : "Abrir capas y vistas"}
+              aria-pressed={compactTab === "layers"}
+            >
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+                <polygon points="12 2 2 7 12 12 22 7 12 2"/>
+                <polyline points="2 17 12 22 22 17"/>
+                <polyline points="2 12 12 17 22 12"/>
+              </svg>
+              Capas
+            </button>
+          </nav>
+        )}
+
         <TelemetryConsole open={consoleOpen} onOpenChange={setConsoleOpen} />
       </div>
     </div>

@@ -63,11 +63,25 @@ Fase 2. Revisión del diff y verificación
 - Comprueba también: que ningún padre pase el prop `compact` a `CatalogPanel`; que la taxonomía de filtros (`crew/nav/comms/fav`) esté sincronizada entre `store.ts`, `symbols.ts` y `catalog.server.ts`, y qué ocurrió con `active/stations/gps/visual`; qué es y qué hace `useLive`.
 - Qué rompió `__root.tsx` y por qué existió `etapa1d_restaurar_root.sh` (solo lectura).
 
-Fase 3. Higiene del repo
-- Añade `workspace.tar.gz` y `*.tar.gz` a `.gitignore` y propón dónde moverlo (primero comprueba si contiene algo que no esté en git).
-- Lee los `etapa1*.sh`, resume cada uno y recomienda: archivar en `scripts/recovery/` con cabecera, o eliminar.
-- Elimina el `SPACETRACKER_HANDOFF.md` duplicado (conserva el de la raíz del repo, tras confirmar).
-- Corrige `scripts/generate-agent-context.cjs` para que use `git rev-parse --show-toplevel` y emita rutas relativas a la raíz y hashes correctos.
+TAREA 3 (versión con capturas) — Estructura de la interfaz en pantallas compactas
+
+Hechos observados en el emulador (Medium Phone API 37.0): el encabezado ocupa ~34 % de la altura; un botón se corta por la derecha; el texto "N sats · fecha UTC" se parte en una palabra por línea; el botón F11 FULLSCREEN aparece en Android; la barra inferior de tiempo/capas flota sobre el mapa; al abrir un panel (radar + ficha de satélite) tapa casi todo el mapa y su parte final queda bajo esa barra. Verifica estos hechos en el código y en las capturas antes de actuar.
+
+Primero entrégame el plano por elemento y espera mi OK; después implementa.
+
+Plano objetivo para compact (vertical):
+- Barra superior de 48-56 dp (+ safe-area-inset-top): título en una línea, icono de búsqueda, icono de ubicación, menú (⋯).
+- Subtítulo con fuentes/versiones, GLITCH, LIVE y demás opciones secundarias: dentro del menú o "Acerca de". LIVE como insignia pequeña.
+- Búsqueda: icono que abre un campo a ancho completo con resultados; el selector de fuente (el botón actual junto al buscador) dentro de ese campo. Averigua en el código qué hace cada uno.
+- F11/FULLSCREEN: solo en escritorio/Tauri; ocúltalo en Android.
+- Contador de satélites y hora UTC: una sola línea con elipsis, nunca en columna vertical.
+- Navegación inferior de 4-5 destinos (Catálogo, Radar, Tiempo, Capas...); averigua qué hacen los botones SOBRE, CAPAS y LOS. Los controles de tiempo pasan a una hoja o mini-barra de una línea.
+- Paneles (radar, ficha del satélite, catálogo, observador): hoja inferior arrastrable con 3 alturas (mínima, media, casi completa), con asa y cierre por gesto. Un solo panel abierto a la vez; el mapa/globo siempre visible en parte. Scroll interno; el contenido final nunca queda bajo la navegación.
+- La pestaña lateral "»" desaparece en compact.
+- Cero desborde horizontal; respeta safe areas; objetivos táctiles ≥ 48 dp; atribuciones del mapa visibles.
+- medium y expanded: sin cambios visibles respecto a hoy (expanded) o sidebar colapsable (medium).
+
+Criterio de aceptación: en 360x800 vertical, la barra superior ocupa como mucho ~10 % de la altura, el mapa/globo es visible al menos al 60 % con un panel en altura mínima, y no hay elementos cortados ni apilados. Capturas antes/después con los mismos pasos que las dos capturas de referencia (mapa vacío y satélite ISS seleccionado).
 
 Fase 4. Commits atómicos
 Agrupa por preocupación, con mensajes convencionales, y ejecuta typecheck + tests antes de cada commit. Por ejemplo:

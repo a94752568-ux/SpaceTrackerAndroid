@@ -7,7 +7,7 @@
  *
  *   1. Integridad: 69 caracteres/línea + checksum CelesTrak + campos (validateTle).
  *   2. Época: ilegible/ilegal → invalid; futura → future; edad > MAX_TLE_AGE_DAYS
- *      (30 d por defecto) → expired (DESCARTADO por completo, no "stale visible").
+ *      (14 d por defecto) → expired (DESCARTADO por completo, no "stale visible").
  *   3. Basura orbital: nombres debris/R/B/OBJECT/designador → junk, salvo que el
  *      NORAD esté en la lista de interés explícito (`interest`).
  *   4. Viabilidad orbital: movimiento medio 0.5–17.6 rev/d y ecc ≤ 0.9,
@@ -27,6 +27,25 @@ import type { CatalogStats, EpochStatus, GroupId, Sat, SourceId } from "./types"
 
 /** Umbral estricto de caducidad: > 30 días ⇒ descarte automático. */
 export const MAX_TLE_AGE_DAYS = 30;
+
+export function emptyStats(): CatalogStats {
+  return {
+    seen: 0,
+    valid: 0,
+    fresh: 0,
+    aging: 0,
+    stale: 0,
+    invalid: 0,
+    future: 0,
+    expired: 0,
+    junk: 0,
+    implausible: 0,
+    decayed: 0,
+    bySource: { live: 0, seed: 0, ivan: 0, satnogs: 0 },
+    seenBySource: { live: 0, seed: 0, ivan: 0, satnogs: 0 },
+    failedBySource: { live: 0, seed: 0, ivan: 0, satnogs: 0 },
+  };
+}
 
 /**
  * Rango viable de movimiento medio para órbitas terrestres (rev/día):
@@ -71,6 +90,30 @@ export interface GateOptions {
   decayCheck?: boolean;
   /** Inyectable para tests: sustituye la comprobación real de decaimiento. */
   isDecayed?: (row: FilterRow, now: Date) => boolean;
+}
+
+export function countReject(stats: CatalogStats, reason: GateRejectReason): void {
+  switch (reason) {
+    case "checksum":
+    case "epochInvalid":
+      stats.invalid++;
+      break;
+    case "epochFuture":
+      stats.future++;
+      break;
+    case "epochExpired":
+      stats.expired++;
+      break;
+    case "junk":
+      stats.junk++;
+      break;
+    case "implausible":
+      stats.implausible++;
+      break;
+    case "decayed":
+      stats.decayed++;
+      break;
+  }
 }
 
 /** Viabilidad orbital pura (sin propagar): mm y excentricidad en rango terrestre. */
@@ -124,88 +167,63 @@ export function gateRow(row: FilterRow, opts: GateOptions = {}): GateResult {
   // 4) Viabilidad orbital
   if (!orbitPlausible(row.line2)) return { ok: false, reason: "implausible" };
 
-  // 5) Reingreso / decaimiento
-  const decayFn = opts.isDecayed ?? isDecayedReal;
-  if ((opts.decayCheck ?? true) && decayFn(row, now)) {
-    return { ok: false, reason: "decayed" };
+  // 5) Decaimiento real vía SGP4
+  if (opts.decayCheck ?? true) {
+    const checkDecay = opts.isDecayed ?? isDecayedReal;
+    if (checkDecay(row, now)) return { ok: false, reason: "decayed" };
   }
 
-  return { ok: true, bucket: d.status };
+  return { ok: true, bucket: d.status as "fresh" | "aging" | "stale" };
 }
 
-export function emptyStats(): CatalogStats {
-  return {
-    seen: 0,
+/** Filtra un catálogo de filas crudas y acumula estadísticas completas. */
+export function filterActiveSatellites(
+  rows: FilterRow[],
+  opts: GateOptions = {},
+): { activeSatellites: Sat[]; stats: CatalogStats } {
+  const now = opts.now ?? new Date();
+  const activeSatellites: Sat[] = [];
+  const stats: CatalogStats = {
+    seen: rows.length,
     valid: 0,
     fresh: 0,
     aging: 0,
     stale: 0,
-    future: 0,
     invalid: 0,
-    junk: 0,
+    future: 0,
     expired: 0,
+    junk: 0,
     implausible: 0,
     decayed: 0,
-    bySource: { satnogs: 0, ivan: 0 },
-    seenBySource: { satnogs: 0, ivan: 0 },
-    failedBySource: { satnogs: 0, ivan: 0 },
+    bySource: { live: 0, seed: 0, ivan: 0, satnogs: 0 },
+    seenBySource: { live: 0, seed: 0, ivan: 0, satnogs: 0 },
+    failedBySource: { live: 0, seed: 0, ivan: 0, satnogs: 0 },
   };
-}
 
-/** Contador de rechazos por razón (para stats incrementales y por lote). */
-export function countReject(stats: CatalogStats, reason: GateRejectReason): void {
-  switch (reason) {
-    case "checksum":
-    case "epochInvalid":
-      stats.invalid++;
-      break;
-    case "epochFuture":
-      stats.future++;
-      break;
-    case "epochExpired":
-      stats.expired++;
-      break;
-    case "junk":
-      stats.junk++;
-      break;
-    case "implausible":
-      stats.implausible++;
-      break;
-    case "decayed":
-      stats.decayed++;
-      break;
-  }
-}
-
-/**
- * Filtra un lote completo en la fase de parseo y devuelve ÚNICAMENTE los
- * satélites vigentes (`activeSatellites`) + stats auditables.
- * Invariante: seen === valid + invalid + future + expired + junk + implausible + decayed.
- */
-export function filterActiveSatellites(
-  rows: FilterRow[],
-  opts: GateOptions = {},
-): { sats: Sat[]; stats: CatalogStats } {
-  const stats = emptyStats();
-  const sats: Sat[] = [];
-  for (const row of rows) {
-    stats.seen++;
-    if (row.source) stats.seenBySource[row.source]++;
-    const g = gateRow(row, opts);
-    if (!g.ok) {
-      countReject(stats, g.reason);
+  for (const r of rows) {
+    if (r.source) {
+      stats.seenBySource[r.source] = (stats.seenBySource[r.source] ?? 0) + 1;
+    }
+    const res = gateRow(r, { ...opts, now });
+    if (!res.ok) {
+      countReject(stats, res.reason);
       continue;
     }
-    stats[g.bucket]++;
+
     stats.valid++;
-    if (row.source) stats.bySource[row.source]++;
-    sats.push({
-      id: Number(row.id),
-      name: (row.name ?? "").trim(),
-      line1: row.line1,
-      line2: row.line2,
-      group: row.group ?? groupOf(row.name ?? ""),
+    stats[res.bucket]++;
+    if (r.source) {
+      stats.bySource[r.source] = (stats.bySource[r.source] ?? 0) + 1;
+    }
+
+    activeSatellites.push({
+      id: Number(r.id),
+      name: r.name.trim(),
+      line1: r.line1,
+      line2: r.line2,
+      group: r.group ?? groupOf(r.name),
     });
   }
-  return { sats, stats };
+
+  return { activeSatellites, stats };
 }

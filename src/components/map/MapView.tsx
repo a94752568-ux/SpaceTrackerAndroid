@@ -229,7 +229,7 @@ export default function MapView({
     // los efectos por props (el menú CAPAS del dock sustituye a
     // L.control.layers y a la antigua leyenda flotante).
     for (const spec of BASE_LAYERS) {
-      baseGroupsRef.current[spec.id] = L.layerGroup(
+      const lg = L.layerGroup(
         spec.layers.map((l) =>
           L.tileLayer(l.url, {
             attribution: l.attribution,
@@ -239,6 +239,10 @@ export default function MapView({
           }),
         ),
       );
+      baseGroupsRef.current[spec.id] = lg;
+      if (spec.id === baseId) {
+        lg.addTo(map);
+      }
     }
     const labels = OVERLAYS.find((o) => o.id === "esri-ref");
     if (labels) {
@@ -347,7 +351,15 @@ export default function MapView({
           canvasMarkersRef.current.delete(s.id);
         }
         const mk = L.marker([0, 0], { icon: domIconFor(s, favIdsRef.current.has(s.id)) });
-        mk.on("click", () => onSelectRef.current(s));
+        mk.on("click", (e) => {
+          L.DomEvent.stopPropagation(e);
+          const el = mk.getElement();
+          if (el) {
+            el.classList.add("st-tap-pulse");
+            setTimeout(() => el.classList.remove("st-tap-pulse"), 600);
+          }
+          onSelectRef.current(s);
+        });
         mk.on("mouseover", () => showTipRef.current(s, mk.getLatLng()));
         mk.on("mouseout", hideTip);
         mk.addTo(map);
@@ -367,7 +379,15 @@ export default function MapView({
             fillColor: GROUP_COLORS[s.group],
             ...FLEET_OFF,
           });
-          cm.on("click", () => onSelectRef.current(s));
+          cm.on("click", (e) => {
+            L.DomEvent.stopPropagation(e);
+            const el = cm.getElement ? cm.getElement() : null;
+            if (el) {
+              el.classList.add("st-tap-pulse");
+              setTimeout(() => el.classList.remove("st-tap-pulse"), 600);
+            }
+            onSelectRef.current(s);
+          });
           cm.on("mouseover", () => showTipRef.current(s, cm.getLatLng()));
           cm.on("mouseout", hideTip);
           cm.addTo(map);
@@ -381,7 +401,15 @@ export default function MapView({
           fillColor: GROUP_COLORS[s.group],
           ...FLEET_OFF,
         });
-        cm.on("click", () => onSelectRef.current(s));
+        cm.on("click", (e) => {
+          L.DomEvent.stopPropagation(e);
+          const el = cm.getElement ? cm.getElement() : null;
+          if (el) {
+            el.classList.add("st-tap-pulse");
+            setTimeout(() => el.classList.remove("st-tap-pulse"), 600);
+          }
+          onSelectRef.current(s);
+        });
         cm.on("mouseover", () => showTipRef.current(s, cm.getLatLng()));
         cm.on("mouseout", hideTip);
         cm.addTo(map);
