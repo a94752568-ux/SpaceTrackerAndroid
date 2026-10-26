@@ -1,1 +1,2917 @@
-SEE_FILE
+/* ============================================================================
+   SpaceTracker — Tema "Mission Control" (modo oscuro absoluto)
+   Tokens: negro absoluto #030508 · acento SpaceX #FF6700 · texto #FFFFFF ·
+   gris técnico #94A3B8 · borde HUD #1E293B · monoespaciada para telemetría.
+   ========================================================================== */
+:root, [data-theme="neon"] {
+  --bg: #050505;
+  --bg-app: var(--bg);
+  --bg-panel: rgba(5, 5, 5, 0.92);
+  --surface-panel: var(--bg-panel);
+  --bg-raise: #111118;
+  --bg-card: #08080c;
+  --bg-input: #040406;
+  --line: #00E5FF;
+  --border-hud: var(--line);
+  --line-soft: #1a1a2e;
+  --text: #ffffff;
+  --muted: #a0a0c0;
+  --text-muted: var(--muted);
+  --accent: #00E5FF;
+  --color-primary: var(--accent);
+  --accent-soft: #F3E600;
+  --accent-glow: rgba(0, 229, 255, 0.45);
+  --accent-glow-strong: rgba(0, 229, 255, 0.7);
+  --cyan: #00E5FF;
+  --yellow: #F3E600;
+  --pink: #FF2DAA;
+  --red: #C5003C;
+  --ok: #00E5FF;
+  --warn: #F3E600;
+  --bad: #C5003C;
+  /* Colores de grupo satelital */
+  --group-crew: #ffd166;
+  --group-weather: #4cc9f0;
+  --group-nav: #b5e48c;
+  --group-science: #c77dff;
+  --group-starlink: #7ee8fa;
+  --group-comms: #f4a261;
+  --group-other: #8d99ae;
+  /* Colores especiales para canvas y SVG */
+  --moon-color: #e2e8f0;
+  --moon-bg: #0a0f1e;
+  --ocean-dark: #081326;
+  --ocean-mid: #040914;
+  --ocean-light: #010306;
+  --selection-orange: #ff6700;
+  --selection-light: #ffb27a;
+  /* Tamaños de fuente tipográficos */
+  --font-size-xs: 10px;
+  --font-size-sm: 11px;
+  --font-size-base: 14px;
+  --font-size-md: 16px;
+  --font-size-lg: 18px;
+  --font-size-xl: 20px;
+  --font-mono: "JetBrains Mono", "Share Tech Mono", ui-monospace, SFMono-Regular,
+    Menlo, Consolas, monospace;
+  --font-ui: system-ui, -apple-system, "Segoe UI", Roboto, Ubuntu, Cantarell, sans-serif;
+  --bevel: polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 10px 100%, 0 calc(100% - 10px));
+  --bevel-sm: polygon(0 0, calc(100% - 6px) 0, 100% 6px, 100% 100%, 6px 100%, 0 calc(100% - 6px));
+  --touch-target-min: 48px;
+  color-scheme: dark;
+}
+
+[data-theme="amber"] {
+  --bg: #020604;
+  --bg-app: var(--bg);
+  --bg-panel: rgba(2, 6, 4, 0.96);
+  --surface-panel: var(--bg-panel);
+  --bg-raise: #08140a;
+  --bg-card: #040a06;
+  --bg-input: #010402;
+  --line: #00FF66;
+  --border-hud: var(--line);
+  --line-soft: #0a2010;
+  --text: #00FF66;
+  --muted: #52c875;
+  --text-muted: var(--muted);
+  --accent: #FFB000;
+  --color-primary: var(--accent);
+  --accent-soft: #00FF66;
+  --accent-glow: rgba(255, 176, 0, 0.5);
+  --accent-glow-strong: rgba(255, 176, 0, 0.8);
+  --cyan: #00FF66;
+  --yellow: #FFB000;
+  --pink: #FF5500;
+  --red: #FF2222;
+  --ok: #00FF66;
+  --warn: #FFB000;
+  --bad: #FF2222;
+  /* Colores de grupo satelital (adaptados para tema Amber) */
+  --group-crew: #ffd166;
+  --group-weather: #4cc9f0;
+  --group-nav: #b5e48c;
+  --group-science: #c77dff;
+  --group-starlink: #7ee8fa;
+  --group-comms: #f4a261;
+  --group-other: #8d99ae;
+  /* Colores especiales para canvas y SVG */
+  --moon-color: #e2e8f0;
+  --moon-bg: #0a0f1e;
+  --ocean-dark: #081326;
+  --ocean-mid: #040914;
+  --ocean-light: #010306;
+  --selection-orange: #ff6700;
+  --selection-light: #ffb27a;
+  /* Tamaños de fuente tipográficos */
+  --font-size-xs: 10px;
+  --font-size-sm: 11px;
+  --font-size-base: 14px;
+  --font-size-md: 16px;
+  --font-size-lg: 18px;
+  --font-size-xl: 20px;
+  --font-mono: "JetBrains Mono", "Share Tech Mono", ui-monospace, SFMono-Regular,
+    Menlo, Consolas, monospace;
+  --font-ui: system-ui, -apple-system, "Segoe UI", Roboto, Ubuntu, Cantarell, sans-serif;
+  --bevel: polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 10px 100%, 0 calc(100% - 10px));
+  --bevel-sm: polygon(0 0, calc(100% - 6px) 0, 100% 6px, 100% 100%, 6px 100%, 0 calc(100% - 6px));
+  --touch-target-min: 48px;
+  color-scheme: dark;
+}
+
+/* Scrollbar estilizado coherente con el tema activo */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: var(--bg-card);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--line);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--accent);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-ui);
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+button {
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  /* INP optimization: hint to browser that buttons will transition */
+  transition: background-color 0.2s ease, border-color 0.2s ease, transform 0.1s ease;
+}
+
+::selection {
+  background: var(--accent);
+  color: #000;
+}
+
+:focus-visible {
+  outline: 1px solid var(--accent);
+  outline-offset: 1px;
+}
+
+/* Datos numéricos de telemetría: SIEMPRE monoespaciados */
+.st-metrics b,
+.st-orbit-params dd,
+.st-passes td,
+.st-passes th,
+.st-timebar-clock,
+.st-tle code,
+.st-prov-meta,
+.st-count,
+.st-timebar-btns button,
+.st-panel-tab {
+  font-family: var(--font-mono);
+}
+
+.st-app {
+  display: flex;
+  flex-direction: column;
+  height: 100dvh;
+  width: 100dvw;
+  overflow: hidden;
+  overscroll-behavior: none;
+  /* Medidas de los paneles flotantes (ancho) y zona inferior reservada al
+     dock: los paneles nunca descienden hasta debajo del reproductor. */
+  --left-panel: min(300px, 86vw);
+  --right-panel: min(390px, 92vw);
+  --dock-zone: 64px;
+  background:
+    radial-gradient(1200px 400px at 50% -10%, rgba(255, 103, 0, 0.05), transparent 70%),
+    var(--bg);
+}
+
+/* Zona intermedia del flujo: entre header y consola. Todo lo flotante se
+   ancla AQUÍ, por construcción nunca colisiona con las franjas del flujo. */
+.st-viewport {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  z-index: 1;
+}
+
+/* ---------------- cabecera en flujo (nunca tapa overlays) ---------------- */
+.st-header {
+  position: relative;
+  flex-shrink: 0;
+  z-index: 20;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 18px;
+  padding: calc(8px + env(safe-area-inset-top, 0px)) 16px 8px;
+  background: rgba(4, 7, 12, 0.82);
+  border-bottom: 1px solid var(--line);
+  backdrop-filter: blur(8px);
+}
+
+.st-observer-badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--accent);
+  background: rgba(34, 211, 238, 0.08);
+  border: 1px solid rgba(34, 211, 238, 0.25);
+  border-radius: 6px;
+  white-space: nowrap;
+}
+
+.st-observer-btn {
+  cursor: pointer;
+  background: rgba(0, 229, 255, 0.1);
+  border: 1px solid rgba(0, 229, 255, 0.4);
+  transition: all 0.2s ease;
+}
+
+.st-observer-btn:hover {
+  background: rgba(0, 229, 255, 0.25);
+  box-shadow: 0 0 10px rgba(0, 229, 255, 0.5);
+  transform: scale(1.02);
+}
+
+.st-observer-btn:active {
+  background: rgba(0, 229, 255, 0.4);
+  box-shadow: 0 0 20px rgba(0, 229, 255, 0.7);
+  transform: scale(0.98);
+}
+
+.st-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.st-brand h1 {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: var(--font-size-lg);
+  font-weight: 700;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--text);
+}
+
+.st-brand h1::after {
+  content: "_";
+  color: var(--accent);
+  animation: st-blink 1.4s steps(1) infinite;
+}
+
+.st-tagline {
+  margin: 0;
+  font-size: 10.5px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.st-search {
+  display: flex;
+  gap: 6px;
+  flex: 1 1 320px;
+  max-width: 560px;
+}
+
+.st-search input {
+  flex: 1;
+  padding: 8px 12px;
+  clip-path: var(--bevel-sm);
+  border: 1px solid var(--line);
+  background: var(--bg-input);
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  outline: none;
+  transition: all 0.3s ease;
+}
+
+.st-search input::placeholder {
+  color: #64748b;
+  font-family: var(--font-ui);
+}
+
+.st-search input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent-glow), 0 0 18px -6px var(--accent-glow);
+}
+
+.st-search button,
+.st-primary,
+.st-ghost {
+  padding: 10px 14px;
+  min-height: 44px;
+  clip-path: var(--bevel-sm);
+  border: 1px solid var(--line);
+  background: var(--bg-raise);
+  color: var(--muted);
+  transition: all 0.3s ease;
+}
+
+.st-search button:hover:not(:disabled),
+.st-ghost:hover {
+  border-color: var(--accent);
+  color: var(--text);
+}
+
+.st-primary {
+  background: linear-gradient(180deg, rgba(255, 103, 0, 0.22), rgba(255, 103, 0, 0.08));
+  border-color: rgba(255, 103, 0, 0.55);
+  color: var(--accent-soft);
+  font-weight: 600;
+}
+
+.st-primary:hover {
+  box-shadow: 0 0 16px -4px var(--accent-glow);
+}
+
+.st-prov {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-left: auto;
+}
+
+.st-prov-meta {
+  color: var(--muted);
+  font-size: 11.5px;
+  letter-spacing: 0.04em;
+}
+
+.st-badge {
+  padding: 2px 8px;
+  clip-path: var(--bevel-sm);
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+}
+
+.st-badge-live {
+  background: rgba(74, 222, 128, 0.12);
+  color: var(--ok);
+  border: 1px solid rgba(74, 222, 128, 0.4);
+}
+
+.st-badge-seed {
+  background: rgba(255, 140, 0, 0.12);
+  color: var(--accent-soft);
+  border: 1px solid rgba(255, 140, 0, 0.45);
+}
+
+.st-stats-toggle,
+.st-theater {
+  background: var(--bg-raise);
+  border: 1px solid var(--line);
+  clip-path: var(--bevel-sm);
+  color: var(--muted);
+  font-size: 11px;
+  padding: 2px 10px;
+  transition: all 0.3s ease;
+}
+
+.st-stats-toggle:hover,
+.st-theater:hover {
+  border-color: var(--accent);
+  color: var(--text);
+}
+
+.st-theater.on {
+  color: var(--accent);
+  border-color: var(--accent);
+  box-shadow: 0 0 12px -4px var(--accent-glow);
+}
+
+/* Conmutador de modo kiosco / pantalla completa (F11) */
+.st-kiosk {
+  background: var(--bg-raise);
+  border: 1px solid var(--line);
+  clip-path: var(--bevel-sm);
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  padding: 3px 9px;
+  transition: all 0.3s ease;
+  white-space: nowrap;
+}
+
+.st-kiosk:hover {
+  border-color: var(--accent);
+  color: var(--text);
+}
+
+.st-kiosk.on {
+  color: var(--accent);
+  border-color: var(--accent);
+  background: rgba(255, 103, 0, 0.12);
+  box-shadow: 0 0 14px -2px var(--accent-glow);
+  text-shadow: 0 0 8px var(--accent-glow);
+}
+
+/* ---------------- botones de ventana nativos (Tauri sin decoraciones) ---------------- */
+.st-winctrl {
+  display: flex;
+  gap: 2px;
+  margin-right: 4px;
+}
+
+.st-winbtn {
+  width: 34px;
+  height: 24px;
+  background: none;
+  border: none;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1;
+  transition: all 0.2s ease;
+}
+
+.st-winbtn:hover {
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.07);
+}
+
+.st-winbtn.close:hover {
+  color: #fff;
+  background: rgba(255, 103, 0, 0.85);
+}
+
+/* En nativo, el cromo del HUD no se selecciona con el cursor */
+.st-native .st-header,
+.st-native .st-dock,
+.st-native .st-panel-tab,
+.st-native .st-console-head {
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.st-stats {
+  flex-basis: 100%;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--muted);
+  border-top: 1px dashed var(--line);
+  padding-top: 8px;
+}
+
+.st-stats b {
+  color: var(--text);
+}
+
+.st-stats .st-fresh b { color: var(--ok); }
+.st-stats .st-aging b { color: var(--warn); }
+.st-stats .st-stale b { color: var(--accent-soft); }
+
+.st-stale-warning {
+  color: var(--accent-soft);
+  font-weight: 600;
+  animation: st-blink 2s steps(1) infinite;
+}
+
+.st-stats .st-note {
+  flex-basis: 100%;
+  font-family: var(--font-ui);
+  font-style: italic;
+}
+
+/* ---------------- layout full-viewport: mapa z-1, paneles HUD z-10 ---------------- */
+
+/* ---------------- panel izquierdo flotante (catálogo) ---------------- */
+/* Glassmorphism avanzado compartido por todos los flotantes del HUD:
+   cristal acrílico profundo + borde 1px con gradiente activo + resplandor
+   sutil en esquinas superiores + acentos biselados naranjas/cian. */
+.hud-panel {
+  background: linear-gradient(rgba(2, 6, 15, 0.85), rgba(2, 6, 15, 0.85)) padding-box,
+    linear-gradient(
+        135deg,
+        rgba(0, 229, 255, 0.6),
+        rgba(255, 103, 0, 0.4) 45%,
+        rgba(243, 230, 0, 0.2)
+      )
+      border-box;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid transparent;
+  box-shadow:
+    0 -1px 20px -6px rgba(0, 229, 255, 0.5),
+    0 10px 40px rgba(0, 0, 0, 0.7),
+    inset 0 0 30px rgba(0, 229, 255, 0.05);
+  transition: box-shadow 0.3s ease, border-color 0.3s ease;
+}
+
+.hud-panel:hover {
+  box-shadow:
+    0 -1px 25px -4px rgba(0, 229, 255, 0.7),
+    0 15px 50px rgba(0, 0, 0, 0.8),
+    inset 0 0 40px rgba(0, 229, 255, 0.08);
+}
+
+/* Esquinas biseladas militar/técnicas vía pseudo-elementos:
+   naranjas (sup-izq + inf-der) y cian (sup-der + inf-izq) */
+.hud-panel::before,
+.hud-panel::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-repeat: no-repeat;
+}
+
+.hud-panel::before {
+  background-image:
+    linear-gradient(rgba(255, 103, 0, 0.9), rgba(255, 103, 0, 0.9)),
+    linear-gradient(rgba(255, 103, 0, 0.9), rgba(255, 103, 0, 0.9)),
+    linear-gradient(rgba(255, 103, 0, 0.9), rgba(255, 103, 0, 0.9)),
+    linear-gradient(rgba(255, 103, 0, 0.9), rgba(255, 103, 0, 0.9));
+  background-position: top left, top left, bottom right, bottom right;
+  background-size: 12px 1px, 1px 12px, 12px 1px, 1px 12px;
+}
+
+.hud-panel::after {
+  background-image:
+    linear-gradient(rgba(34, 211, 238, 0.8), rgba(34, 211, 238, 0.8)),
+    linear-gradient(rgba(34, 211, 238, 0.8), rgba(34, 211, 238, 0.8)),
+    linear-gradient(rgba(34, 211, 238, 0.8), rgba(34, 211, 238, 0.8)),
+    linear-gradient(rgba(34, 211, 238, 0.8), rgba(34, 211, 238, 0.8));
+  background-position: top right, top right, bottom left, bottom left;
+  background-size: 12px 1px, 1px 12px, 12px 1px, 1px 12px;
+}
+
+/* Accesibilidad: quien pida menos transparencia, cristal opaco sin blur */
+@media (prefers-reduced-transparency: reduce) {
+  .hud-panel {
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    background: rgba(2, 6, 15, 0.96) padding-box;
+  }
+}
+
+.st-sidebar {
+  position: absolute;
+  top: 1rem;
+  left: 1rem;
+  max-height: calc(100% - 2rem - var(--dock-zone));
+  width: var(--left-panel);
+  z-index: 10;
+  overflow-y: auto;
+  padding: 10px 8px 24px;
+  transform: translateX(0);
+  opacity: 1;
+  will-change: transform; /* aceleración por hardware en el repliegue */
+  transition: transform 0.3s ease, opacity 0.3s ease;
+  /* INP optimization: skip rendering when off-screen */
+  contain: layout style paint;
+}
+
+.st-app.left-closed .st-sidebar {
+  transform: translateX(calc(-100% - 2rem));
+  opacity: 0;
+  pointer-events: none;
+}
+
+.st-sidebar h2 {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  color: var(--muted);
+  margin: 14px 6px 6px;
+}
+
+.st-sidebar h2 small {
+  color: var(--accent);
+  margin-left: 6px;
+}
+
+.st-sidebar ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.st-sat {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.st-sat:hover {
+  background: rgba(30, 41, 59, 0.35);
+}
+
+.st-sat.selected {
+  background: rgba(255, 103, 0, 0.1);
+  box-shadow: inset 2px 0 0 var(--accent);
+}
+
+.st-sat-name {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: none;
+  border: none;
+  padding: 8px 10px;
+  min-height: 44px;
+  text-align: left;
+  font-size: 12.5px;
+  min-width: 0;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.st-sat-name i {
+  width: 7px;
+  height: 7px;
+  border-radius: 1px;
+  flex: none;
+  transform: rotate(45deg); /* rombo técnico en lugar de círculo */
+}
+
+.st-ext {
+  font-size: 9px;
+  border: 1px solid var(--cyan);
+  color: var(--cyan);
+  clip-path: var(--bevel-sm);
+  padding: 0 4px;
+  flex: none;
+  font-family: var(--font-mono);
+}
+
+.st-group-head {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: none;
+  border: none;
+  border-top: 1px solid var(--line-soft);
+  padding: 6px 8px;
+  font-family: var(--font-mono);
+  font-weight: 600;
+  font-size: 11.5px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text);
+}
+
+.st-group-head i {
+  width: 8px;
+  height: 8px;
+  transform: rotate(45deg);
+  border-radius: 1px;
+}
+
+.st-count {
+  margin-left: auto;
+  color: var(--muted);
+  font-size: 10.5px;
+  background: var(--bg-input);
+  border: 1px solid var(--line-soft);
+  padding: 1px 7px;
+}
+
+.st-chevron {
+  color: var(--accent);
+  font-size: 10px;
+}
+
+.st-hint {
+  color: var(--muted);
+  font-size: 11.5px;
+  margin: 6px 8px;
+}
+
+/* ---------------- favoritos v2 ---------------- */
+.st-favs-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  margin: 14px 6px 6px;
+}
+
+.st-favs-head h2 {
+  margin: 0;
+}
+
+.st-radar-toggle {
+  border: 1px solid var(--line);
+  background: var(--bg-raise);
+  clip-path: var(--bevel-sm);
+  padding: 3px 10px;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.1em;
+  color: var(--muted);
+  transition: all 0.3s ease;
+}
+
+.st-radar-toggle.on {
+  color: var(--accent);
+  border-color: var(--accent);
+  background: rgba(255, 103, 0, 0.12);
+  box-shadow: 0 0 14px -4px var(--accent-glow);
+}
+
+.st-favlist {
+  margin: 4px 6px;
+  border: 1px solid var(--line);
+  clip-path: var(--bevel-sm);
+  background: var(--bg-card);
+  position: relative;
+}
+
+.st-favlist::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, var(--accent), transparent 65%);
+  opacity: 0.7;
+}
+
+.st-favlist-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 6px;
+}
+
+.st-favlist-fold {
+  background: none;
+  border: none;
+  color: var(--accent);
+  padding: 0 2px;
+  font-size: 10px;
+}
+
+.st-favlist-icon {
+  width: 16px;
+  text-align: center;
+}
+
+.st-favlist-name {
+  flex: 1;
+  background: none;
+  border: none;
+  text-align: left;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 2px 0;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text);
+}
+
+.st-favlist-rename {
+  flex: 1;
+  display: flex;
+  gap: 4px;
+}
+
+.st-favlist-rename input {
+  flex: 1;
+  min-width: 0;
+  background: var(--bg-input);
+  border: 1px solid var(--accent);
+  color: var(--text);
+  padding: 2px 6px;
+  font: inherit;
+  font-size: 12px;
+}
+
+.st-favlist-rename button {
+  background: var(--bg-raise);
+  border: 1px solid var(--line);
+  padding: 0 6px;
+  color: var(--ok);
+}
+
+.st-iconbtn {
+  background: none;
+  border: none;
+  color: var(--muted);
+  font-size: 11px;
+  padding: 6px 8px;
+  min-width: 40px;
+  min-height: 40px;
+  transition: all 0.3s ease;
+}
+
+.st-iconbtn:hover {
+  color: var(--text);
+  background: rgba(30, 41, 59, 0.6);
+}
+
+.st-iconbtn.danger.armed {
+  color: var(--bad);
+  outline: 1px solid var(--bad);
+}
+
+.st-favlist ul {
+  padding: 0 4px 6px;
+}
+
+/* ---------------- área de mapa: 100 % del viewport, z-1 ---------------- */
+.st-map-area {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+}
+
+.st-map-wrap {
+  position: absolute;
+  inset: 0;
+}
+
+.st-map {
+  position: absolute;
+  inset: 0;
+}
+
+.leaflet-container {
+  background-color: #030508 !important;
+  font-family: var(--font-ui);
+}
+
+/* Filtro GPU sobre el contenedor de TESELAS (no sobre todo el contenedor:
+   así satélites, órbitas, retículas y controles conservan su brillo y color
+   HUD intactos). Composited por hardware: no repinta layout en cada frame. */
+.leaflet-tile-pane {
+  filter: brightness(0.65) contrast(1.25) saturate(0.4);
+}
+
+.leaflet-tooltip {
+  background: rgba(5, 8, 15, 0.95);
+  border: 1px solid var(--line);
+  color: var(--text);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.6);
+  font-size: 12px;
+  border-radius: 0;
+}
+
+.leaflet-tooltip-top:before {
+  border-top-color: var(--line);
+}
+
+/* Pestañas flotantes del Modo Teatro (montadas sobre el borde de cada panel) */
+.st-panel-tab {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 15;
+  width: 20px;
+  height: 64px;
+  border: 1px solid var(--line);
+  background: rgba(6, 10, 18, 0.85);
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1;
+  transition: left 0.3s ease, right 0.3s ease, background 0.3s ease, color 0.3s ease,
+    width 0.3s ease;
+  backdrop-filter: blur(4px);
+}
+
+.st-panel-tab.left {
+  left: calc(1rem + var(--left-panel));
+  border-left: none;
+  clip-path: polygon(0 0, 100% 0, calc(100% - 6px) 50%, 100% 100%, 0 100%);
+}
+
+.st-app.left-closed .st-panel-tab.left {
+  left: 1rem;
+}
+
+.st-panel-tab:hover {
+  color: var(--accent);
+  background: rgba(255, 103, 0, 0.12);
+  width: 26px;
+}
+
+/* Chip de radar */
+.st-radar-chip {
+  position: absolute;
+  top: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 500;
+  background: rgba(255, 103, 0, 0.14);
+  border: 1px solid var(--accent);
+  color: var(--accent-soft);
+  clip-path: var(--bevel-sm);
+  padding: 3px 12px;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  backdrop-filter: blur(4px);
+}
+
+/* ---------------- marcadores ---------------- */
+.st-dot-icon {
+  background: transparent;
+  border: none;
+}
+
+.st-hit {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  cursor: crosshair; /* mira de targeting */
+}
+
+/* Contenedores divIcon del tier DOM (favoritos / categoría activa) */
+.st-dom-icon {
+  background: transparent;
+  border: none;
+}
+
+.st-fav-badge {
+  position: absolute;
+  top: -3px;
+  right: -3px;
+  font-size: 8px;
+  line-height: 1;
+  color: var(--warn);
+  text-shadow: 0 0 4px rgba(251, 191, 36, 0.8);
+  pointer-events: none;
+}
+
+.st-ico {
+  display: block;
+  transform: rotate(var(--rot, 0deg));
+  transition: transform 0.8s linear;
+}
+
+/* ================= GLOW FX: neón sobre negro absoluto ================= */
+/* Flota en canvas: resplandor cian multicapa (una pasada GPU sobre el canvas) */
+.leaflet-overlay-pane canvas {
+  filter: drop-shadow(0 0 6px rgba(0, 242, 255, 0.55))
+    drop-shadow(0 0 14px rgba(0, 242, 255, 0.25));
+}
+
+/* Iconos del tier DOM: hyper glow neón multicapa */
+.st-ico svg {
+  display: block;
+  width: 14px;
+  height: 14px;
+  filter: drop-shadow(0 0 8px rgba(0, 242, 255, 0.9))
+    drop-shadow(0 0 20px rgba(0, 242, 255, 0.4));
+}
+
+/* Seleccionado: brillo naranja intenso pulsante */
+.st-sat-icon .st-ico svg {
+  filter: drop-shadow(0 0 6px rgba(255, 103, 0, 0.9))
+    drop-shadow(0 0 16px rgba(255, 103, 0, 0.5));
+  animation: st-glow-pulse 2.4s ease-in-out infinite;
+}
+
+@keyframes st-glow-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.72;
+  }
+}
+
+/* Halo expansivo naranja del seleccionado */
+.st-halo {
+  position: absolute;
+  inset: -14px;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle,
+    rgba(255, 103, 0, 0.38) 0%,
+    rgba(255, 103, 0, 0.12) 45%,
+    rgba(255, 103, 0, 0) 72%
+  );
+  pointer-events: none;
+  animation: pulse-ring 2.4s ease-out infinite;
+}
+
+@keyframes pulse-ring {
+  0% {
+    transform: scale(0.55);
+    opacity: 0.95;
+  }
+  100% {
+    transform: scale(1.65);
+    opacity: 0;
+  }
+}
+
+.st-ico-lg svg {
+  width: 18px;
+  height: 18px;
+}
+
+.st-hit:hover .st-ico {
+  transform: rotate(var(--rot, 0deg)) scale(1.3);
+  transition: transform 0.12s ease;
+}
+
+/* Satélite seleccionado: retícula HUD giratoria + anillos de pulso */
+.st-sat-icon {
+  position: relative;
+  background: transparent;
+  border: none;
+}
+
+.st-reticle {
+  position: absolute;
+  inset: -7px;
+  border: 1px dashed var(--accent);
+  border-radius: 50%;
+  pointer-events: none;
+  animation: spin-slow 20s linear infinite;
+  filter: drop-shadow(0 0 6px rgba(255, 103, 0, 0.55));
+}
+
+@keyframes spin-slow {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.st-reticle::before,
+.st-reticle::after {
+  content: "";
+  position: absolute;
+  background: var(--accent);
+}
+
+.st-reticle::before {
+  left: 50%;
+  top: -4px;
+  width: 1px;
+  height: 8px;
+}
+
+.st-reticle::after {
+  top: 50%;
+  left: -4px;
+  height: 1px;
+  width: 8px;
+}
+
+.selected-satellite-active::before,
+.selected-satellite-active::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 1px solid var(--accent);
+  box-shadow: 0 0 10px rgba(255, 103, 0, 0.45);
+  opacity: 0;
+  pointer-events: none;
+  animation: st-pulse 2.4s ease-out infinite;
+}
+
+.selected-satellite-active::after {
+  animation-delay: 1.2s;
+}
+
+@keyframes st-pulse {
+  0% {
+    transform: scale(0.5);
+    opacity: 0.9;
+  }
+  70%,
+  100% {
+    transform: scale(2.6);
+    opacity: 0;
+  }
+}
+
+@keyframes st-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes st-blink {
+  50% {
+    opacity: 0.25;
+  }
+}
+
+/* Pulso de telemetría en paneles principales */
+@keyframes telemetry-pulse {
+  0%,
+  100% {
+    box-shadow:
+      0 -1px 20px -6px rgba(0, 229, 255, 0.5),
+      0 10px 40px rgba(0, 0, 0, 0.7),
+      inset 0 0 30px rgba(0, 229, 255, 0.05);
+  }
+  50% {
+    box-shadow:
+      0 -1px 30px -4px rgba(0, 229, 255, 0.8),
+      0 15px 60px rgba(0, 0, 0, 0.9),
+      inset 0 0 50px rgba(0, 229, 255, 0.12);
+  }
+}
+
+.hud-panel.telemetry-update {
+  animation: telemetry-pulse 1s ease-in-out;
+}
+
+.st-obs-icon {
+  background: transparent;
+  border: none;
+}
+
+.st-obs-dot {
+  width: 10px;
+  height: 10px;
+  margin: 3px;
+  border-radius: 50%;
+  background: var(--accent);
+  border: 2px solid rgba(255, 255, 255, 0.35);
+  box-shadow: 0 0 12px var(--accent-glow);
+}
+
+/* Tooltip compartido */
+.st-tip {
+  background: rgba(5, 8, 15, 0.96);
+  border: 1px solid var(--line);
+  border-left: 2px solid var(--accent);
+  color: var(--text);
+  border-radius: 0;
+  padding: 4px 9px;
+  font-size: 12px;
+  line-height: 1.3;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.7);
+}
+
+.st-tip b {
+  display: block;
+  font-size: 12.5px;
+}
+
+.st-tip-ico {
+  display: inline-block;
+  vertical-align: -3px;
+  margin-right: 6px;
+}
+
+.st-tip-ico svg {
+  display: inline-block;
+  vertical-align: middle;
+}
+
+.st-tip-norad {
+  display: block;
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+}
+
+.leaflet-tooltip.st-tip::before {
+  display: none;
+}
+
+/* El filtrado de teselas es ÚNICO y vive en .leaflet-tile-pane (ver arriba):
+   sin filtros por capa para evitar doble atenuación y mantener una sola
+   pasada de composición GPU. */
+
+/* Controles Leaflet en tema HUD */
+.leaflet-control-layers {
+  background: var(--bg-panel);
+  color: var(--text);
+  border: 1px solid var(--line);
+  border-radius: 0;
+  clip-path: var(--bevel-sm);
+  box-shadow: none;
+  backdrop-filter: blur(6px);
+}
+
+.leaflet-control-layers-list label {
+  color: var(--text);
+  font-size: 12px;
+}
+
+.leaflet-control-layers-base input {
+  accent-color: var(--accent);
+}
+
+.leaflet-control-attribution {
+  background: rgba(3, 5, 8, 0.72) !important;
+  color: #64748b;
+  font-family: var(--font-mono);
+  font-size: 9px;
+}
+
+.leaflet-control-attribution a {
+  color: var(--muted);
+}
+
+.leaflet-bar a {
+  background: var(--bg-panel);
+  color: var(--muted);
+  border-bottom: 1px solid var(--line);
+}
+
+.leaflet-bar a:hover {
+  background: var(--bg-raise);
+  color: var(--accent);
+}
+
+/* ---------------- drawer de detalles: OCULTO por defecto, slide-in glass ---------------- */
+.st-right {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  max-height: calc(100% - 2rem - var(--dock-zone));
+  width: var(--right-panel);
+  z-index: 10;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 12px;
+  transform: translateX(calc(100% + 2rem));
+  opacity: 0;
+  pointer-events: none;
+  will-change: transform; /* aceleración por hardware en el slide-in/out */
+  transition: transform 0.3s ease, opacity 0.3s ease;
+  /* INP optimization: skip rendering when off-screen */
+  contain: layout style paint;
+}
+
+.st-right.open {
+  transform: translateX(0);
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.st-detail {
+  position: relative;
+  border: 1px solid var(--line);
+  clip-path: var(--bevel);
+  background: var(--bg-panel);
+  padding: 12px;
+}
+
+.st-detail::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, var(--accent), rgba(255, 103, 0, 0.15) 55%, transparent 85%);
+}
+
+.st-detail h2 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--text);
+}
+
+.st-detail-empty {
+  border-style: dashed;
+}
+
+.st-detail-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  align-items: flex-start;
+}
+
+.st-detail-actions {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.st-track,
+.st-close {
+  background: var(--bg-raise);
+  border: 1px solid var(--line);
+  clip-path: var(--bevel-sm);
+  padding: 4px 9px;
+  font-size: 12px;
+  color: var(--muted);
+  transition: all 0.3s ease;
+}
+
+.st-track.on {
+  color: var(--accent);
+  border-color: var(--accent);
+  box-shadow: 0 0 12px -4px var(--accent-glow);
+}
+
+.st-sub {
+  margin: 2px 0 8px;
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+
+.st-epoch {
+  clip-path: var(--bevel-sm);
+  padding: 1px 8px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+.st-epoch-fresh { background: rgba(74, 222, 128, 0.14); color: var(--ok); }
+.st-epoch-aging { background: rgba(251, 191, 36, 0.14); color: var(--warn); }
+.st-epoch-stale { background: rgba(255, 140, 0, 0.16); color: var(--accent-soft); }
+.st-epoch-future,
+.st-epoch-invalid { background: rgba(251, 113, 133, 0.16); color: var(--bad); }
+
+/* Tarjetas de telemetría: cristal biselado + barra de acento superior */
+.st-metrics {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 8px;
+}
+
+.st-metrics > div {
+  position: relative;
+  background: var(--bg-card);
+  border: 1px solid var(--line);
+  clip-path: var(--bevel-sm);
+  padding: 7px 10px 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  transition: all 0.3s ease;
+}
+
+.st-metrics > div::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, var(--accent), transparent 70%);
+  opacity: 0.8;
+}
+
+.st-metrics > div:hover {
+  border-color: rgba(255, 103, 0, 0.5);
+  box-shadow: 0 0 14px -6px var(--accent-glow);
+}
+
+.st-metrics span {
+  color: var(--muted);
+  font-size: 9.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+}
+
+.st-metrics b {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+}
+
+.st-metrics .st-visible b {
+  color: var(--ok);
+  text-shadow: 0 0 10px rgba(74, 222, 128, 0.4);
+}
+
+.st-warn {
+  background: rgba(251, 113, 133, 0.12);
+  border: 1px solid rgba(251, 113, 133, 0.45);
+  color: var(--bad);
+  clip-path: var(--bevel-sm);
+  padding: 8px 10px;
+}
+
+.st-orbit-params,
+.st-tle,
+.st-passes {
+  margin-top: 10px;
+}
+
+.st-orbit-params summary,
+.st-tle summary {
+  cursor: pointer;
+  color: var(--accent-soft);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+
+.st-orbit-params dl {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px 10px;
+  margin: 6px 0;
+}
+
+.st-orbit-params dl > div {
+  display: flex;
+  justify-content: space-between;
+  border-bottom: 1px dashed var(--line-soft);
+  padding: 2px 0;
+}
+
+.st-orbit-params dt {
+  color: var(--muted);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.st-orbit-params dd {
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+  font-size: 12px;
+  color: var(--text);
+}
+
+.st-passes h3 {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  margin: 4px 0;
+  color: var(--accent-soft);
+}
+
+.st-passes-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
+.st-passes table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 11.5px;
+}
+
+.st-passes th {
+  text-align: left;
+  color: var(--muted);
+  font-weight: 500;
+  font-size: 9.5px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  border-bottom: 1px solid var(--line);
+  padding: 3px 6px;
+}
+
+.st-passes td {
+  border-bottom: 1px dashed var(--line-soft);
+  padding: 3px 6px;
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+}
+
+.st-tle code {
+  display: block;
+  font-size: 10.5px;
+  background: var(--bg-input);
+  border: 1px solid var(--line-soft);
+  border-left: 2px solid var(--cyan);
+  padding: 5px 8px;
+  margin-top: 4px;
+  overflow-x: auto;
+  white-space: pre;
+  color: var(--muted);
+}
+
+/* Picker de favoritos */
+.st-favpicker {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  margin: 2px 0 8px;
+}
+
+.st-favpicker-label {
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+}
+
+.st-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border: 1px solid var(--line);
+  background: var(--bg-raise);
+  color: var(--muted);
+  clip-path: var(--bevel-sm);
+  padding: 2px 10px;
+  font-size: 11px;
+  transition: all 0.3s ease;
+}
+
+.st-chip.on {
+  color: var(--accent-soft);
+  border-color: rgba(255, 103, 0, 0.6);
+  background: rgba(255, 103, 0, 0.12);
+}
+
+.st-chip.add {
+  border-style: dashed;
+}
+
+.st-chip-new {
+  display: flex;
+  gap: 4px;
+}
+
+.st-chip-new input {
+  background: var(--bg-input);
+  border: 1px solid var(--line);
+  color: var(--text);
+  padding: 2px 8px;
+  font: inherit;
+  font-size: 12px;
+  width: 140px;
+}
+
+.st-chip-new button {
+  background: var(--bg-raise);
+  border: 1px solid var(--line);
+  padding: 2px 8px;
+  font-size: 11px;
+}
+
+/* ---------------- observador ---------------- */
+.st-observer {
+  border: 1px solid var(--line);
+  clip-path: var(--bevel);
+  background: var(--bg-panel);
+  position: relative;
+  padding: 10px 12px;
+}
+
+.st-observer::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, var(--accent), transparent 70%);
+  opacity: 0.85;
+}
+
+.st-observer-head {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  background: none;
+  border: none;
+  padding: 4px 2px;
+}
+
+.st-observer-head h3 {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--accent-soft);
+}
+
+.st-observer-form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 8px 2px;
+}
+
+.st-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.st-row label {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+  flex: 1 1 120px;
+}
+
+.st-grow {
+  flex: 1;
+}
+
+.st-row input,
+.st-row select {
+  padding: 7px 9px;
+  border: 1px solid var(--line);
+  background: var(--bg-input);
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  clip-path: var(--bevel-sm);
+  outline: none;
+  transition: all 0.3s ease;
+}
+
+.st-input-with-btn {
+  display: flex;
+  gap: 4px;
+}
+
+.st-input-with-btn input {
+  flex: 1;
+  min-width: 0;
+}
+
+.st-input-with-btn button {
+  padding: 7px 10px;
+  border: 1px solid var(--line);
+  background: var(--bg-raise);
+  color: var(--muted);
+  clip-path: var(--bevel-sm);
+  font-size: 14px;
+  transition: all 0.3s ease;
+}
+
+.st-input-with-btn button:hover:not(:disabled) {
+  border-color: var(--accent);
+  color: var(--text);
+}
+
+.st-input-with-btn button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.st-row input:focus,
+.st-row select:focus {
+  border-color: var(--accent);
+}
+
+.st-actions {
+  align-items: center;
+}
+
+.st-actions select {
+  flex: 0 1 190px;
+}
+
+.st-spacer {
+  flex: 1;
+}
+
+.st-error {
+  color: var(--bad);
+  font-size: 12px;
+  margin: 2px 0 0;
+}
+
+/* ---------------- línea de tiempo ---------------- */
+/* TimeBar como cluster interno del dock (sin posicionamiento propio) */
+.st-timebar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1 1 300px;
+  min-width: 0;
+}
+
+.st-timebar-btns {
+  display: flex;
+  gap: 4px;
+}
+
+.st-timebar-btns button {
+  background: var(--bg-raise);
+  border: 1px solid var(--line);
+  color: var(--muted);
+  clip-path: var(--bevel-sm);
+  padding: 3px 8px;
+  font-size: 11px;
+  transition: all 0.3s ease;
+}
+
+.st-timebar-btns button:hover:not(:disabled) {
+  border-color: var(--accent);
+  color: var(--accent-soft);
+}
+
+.st-timebar-btns button:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.st-timebar input[type="range"] {
+  flex: 1;
+  min-width: 110px;
+  accent-color: var(--accent);
+}
+
+.st-timebar-read {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  line-height: 1.15;
+}
+
+.st-live-dot {
+  color: var(--ok);
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  letter-spacing: 0.16em;
+}
+
+.st-live-dot::before {
+  content: "● ";
+  animation: st-blink 1.6s infinite;
+}
+
+.st-sim-dot {
+  color: var(--accent-soft);
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  letter-spacing: 0.16em;
+}
+
+.st-timebar-clock {
+  font-size: 11.5px;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------------- consola de telemetría: cajón retráctil flotante ----------------
+   Oculta por defecto (fuera del viewport); se abre con ▮ LOG del dock o con
+   su propia cabecera. Flota SOBRE el dock con aire propio: nunca se empalma
+   con el reproductor de tiempo ni recorta paneles (ya no ocupa flujo). */
+.st-console {
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  bottom: calc(1rem + var(--dock-zone) + env(safe-area-inset-bottom, 0px));
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  height: clamp(160px, 32vh, 260px);
+  overflow: hidden;
+  clip-path: var(--bevel);
+  transform: translateY(calc(100% + 2rem));
+  opacity: 0;
+  pointer-events: none;
+  transition: transform 0.3s ease, opacity 0.3s ease;
+}
+
+.st-console.open {
+  transform: translateY(0);
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.st-console-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  height: 34px;
+  flex: none;
+  background: none;
+  border: none;
+  padding: 0 14px;
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.16em;
+  transition: all 0.3s ease;
+}
+
+.st-console-head:hover {
+  color: var(--text);
+  background: rgba(255, 103, 0, 0.05);
+}
+
+.st-console-title {
+  color: var(--accent-soft);
+}
+
+.st-console-count {
+  color: var(--warn);
+}
+
+.st-console-clock {
+  margin-left: auto;
+  color: var(--muted);
+}
+
+.st-console-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 4px 14px 8px;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  line-height: 1.55;
+  background: linear-gradient(180deg, rgba(255, 103, 0, 0.04), transparent 26%);
+}
+
+.st-log {
+  display: flex;
+  gap: 8px;
+  white-space: pre-wrap;
+}
+
+.st-log-t {
+  color: #475569;
+  flex: none;
+}
+
+.st-log-l {
+  flex: none;
+  width: 52px;
+}
+
+.st-log-SYS .st-log-l { color: var(--muted); }
+.st-log-SYS .st-log-m { color: #cbd5e1; }
+.st-log-ORBIT .st-log-l { color: var(--cyan); }
+.st-log-ORBIT .st-log-m { color: #cffafe; }
+.st-log-TLE .st-log-l { color: var(--ok); }
+.st-log-TLE .st-log-m { color: #d1fae5; }
+.st-log-WARN .st-log-l { color: var(--accent-soft); }
+.st-log-WARN .st-log-m { color: #ffdba8; }
+.st-log-ALRT .st-log-l { color: var(--accent); animation: st-blink 1.2s steps(1) infinite; }
+.st-log-ALRT .st-log-m { color: #ffc79c; }
+
+.st-console-foot {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  flex: none;
+  padding: 4px 14px 8px;
+  border-top: 1px dashed var(--line-soft);
+}
+
+.st-logfilter {
+  background: var(--bg-raise);
+  border: 1px solid var(--line);
+  clip-path: var(--bevel-sm);
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  letter-spacing: 0.12em;
+  padding: 2px 8px;
+  transition: all 0.3s ease;
+}
+
+.st-logfilter.on.st-logfilter-SYS { color: var(--muted); border-color: #334155; }
+.st-logfilter.on.st-logfilter-ORBIT { color: var(--cyan); border-color: rgba(34, 211, 238, 0.5); }
+.st-logfilter.on.st-logfilter-TLE { color: var(--ok); border-color: rgba(74, 222, 128, 0.5); }
+.st-logfilter.on.st-logfilter-WARN { color: var(--accent-soft); border-color: rgba(255, 140, 0, 0.55); }
+.st-logfilter.on.st-logfilter-ALRT { color: var(--accent); border-color: var(--accent); }
+
+/* ---------------- radar de cielo local ---------------- */
+.st-skyradar {
+  position: relative;
+  border: 1px solid var(--line);
+  clip-path: var(--bevel);
+  background: var(--bg-panel);
+  padding: 10px 12px 8px;
+}
+
+.st-skyradar::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, var(--accent), transparent 70%);
+}
+
+.st-skyradar h3 {
+  margin: 0 0 4px;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--accent-soft);
+}
+
+.st-skyradar svg {
+  display: block;
+  margin: 0 auto;
+  max-width: 100%;
+}
+
+.st-radar-ring {
+  fill: none;
+  stroke: var(--line);
+  stroke-width: 1;
+}
+
+.st-radar-ring-0 {
+  stroke: rgba(255, 103, 0, 0.55);
+}
+
+.st-radar-axis {
+  stroke: var(--line-soft);
+  stroke-width: 1;
+  stroke-dasharray: 2 4;
+}
+
+.st-radar-card {
+  fill: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 10px;
+}
+
+.st-radar-n {
+  fill: var(--accent-soft);
+  font-weight: 700;
+}
+
+.st-radar-el {
+  fill: #475569;
+  font-family: var(--font-mono);
+  font-size: 7.5px;
+}
+
+.st-radar-sweep line {
+  stroke: var(--accent);
+  stroke-width: 1;
+  opacity: 0.5;
+}
+
+.st-radar-sweep {
+  transform-origin: 120px 120px;
+  animation: spin-slow 20s linear infinite;
+  opacity: 0.35;
+}
+
+.st-radar-track {
+  fill: none;
+  stroke: var(--cyan);
+  stroke-width: 1.6;
+  opacity: 0.85;
+}
+
+.st-radar-track-fut {
+  stroke-dasharray: 3 3;
+  opacity: 0.45;
+}
+
+.st-radar-live {
+  fill: var(--accent);
+}
+
+.st-radar-live-glow {
+  fill: var(--accent);
+  opacity: 0.22;
+  animation: st-blink 1.6s infinite;
+}
+
+.st-radar-zenith {
+  fill: var(--muted);
+}
+
+.st-skyradar-read {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 4px;
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+}
+
+/* ---------------- intercepción de eventos: blindaje estricto de coberturas ----------------
+   Doble seguridad además de `interactive: false` en las capas de soporte
+   (huella, órbita, terminador): el contenedor SVG de Leaflet nunca captura
+   clics; solo los paths marcados .leaflet-interactive por el propio Leaflet
+   (que aquí no usamos: todo lo vectorial va por canvas) los recibirían.
+   El canvas NO se toca: el renderer canvas hace hit-testing por software y
+   necesita sus eventos para los circleMarker interactivos de la flota. */
+.leaflet-overlay-pane > svg {
+  pointer-events: none !important;
+}
+
+.leaflet-overlay-pane > svg path.leaflet-interactive {
+  pointer-events: visiblePainted !important;
+}
+
+.selected-satellite-active::before,
+.selected-satellite-active::after,
+.st-reticle {
+  pointer-events: none !important;
+}
+
+.st-tip {
+  pointer-events: none !important;
+}
+
+/* Controles de Leaflet esquivando paneles flotantes (zona viewport) */
+.leaflet-top.leaflet-left {
+  top: 8px;
+  left: 24px;
+  transition: left 0.3s ease;
+}
+
+.st-app:not(.left-closed) .leaflet-top.leaflet-left {
+  left: calc(var(--left-panel) + 24px);
+}
+
+.leaflet-bottom.leaflet-right {
+  bottom: 8px;
+  right: 12px;
+}
+
+/* ---------------- dock inferior central (HUD flotante) ---------------- */
+.st-dock {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: 1rem;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: center;
+  padding: 6px 12px;
+  max-width: 90vw;
+  transition: bottom 0.3s ease;
+}
+
+.st-dock-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.st-dock-sep {
+  width: 1px;
+  align-self: stretch;
+  background: var(--line);
+}
+
+.st-dock-btn {
+  background: var(--bg-raise);
+  border: 1px solid var(--line);
+  clip-path: var(--bevel-sm);
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.12em;
+  padding: 5px 10px;
+  transition: all 0.3s ease;
+  white-space: nowrap;
+}
+
+.st-dock-btn:hover {
+  border-color: var(--accent);
+  color: var(--text);
+}
+
+.st-dock-btn.on {
+  color: var(--accent-soft);
+  border-color: rgba(255, 103, 0, 0.6);
+  background: rgba(255, 103, 0, 0.1);
+}
+
+.st-dock-menu {
+  position: relative;
+}
+
+.st-layers-pop {
+  position: absolute;
+  bottom: calc(100% + 10px);
+  right: 0;
+  width: 250px;
+  z-index: 30;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.st-pop-sec h4 {
+  margin: 0 0 4px;
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.st-pop-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  font-size: 12px;
+  color: var(--text);
+  padding: 2px 0;
+}
+
+.st-pop-row input {
+  accent-color: var(--accent);
+}
+
+.st-pop-cat {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: 1px solid transparent;
+  color: var(--muted);
+  font-size: 11.5px;
+  padding: 2px 6px;
+  transition: all 0.3s ease;
+}
+
+.st-pop-cat:hover {
+  color: var(--text);
+}
+
+.st-pop-cat.on {
+  color: var(--accent-soft);
+  border-color: rgba(255, 103, 0, 0.5);
+  background: rgba(255, 103, 0, 0.08);
+}
+
+.st-pop-cat i {
+  width: 8px;
+  height: 8px;
+  transform: rotate(45deg);
+  border-radius: 1px;
+}
+
+.st-pop-close {
+  align-self: flex-end;
+  background: none;
+  border: none;
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+}
+
+/* Retícula técnica de esquinas (4 esquinas, 2 trazos cada una) */
+.st-corners {
+  background-image:
+    linear-gradient(rgba(255, 103, 0, 0.85), rgba(255, 103, 0, 0.85)),
+    linear-gradient(rgba(255, 103, 0, 0.85), rgba(255, 103, 0, 0.85)),
+    linear-gradient(rgba(255, 103, 0, 0.85), rgba(255, 103, 0, 0.85)),
+    linear-gradient(rgba(255, 103, 0, 0.85), rgba(255, 103, 0, 0.85)),
+    linear-gradient(rgba(255, 103, 0, 0.85), rgba(255, 103, 0, 0.85)),
+    linear-gradient(rgba(255, 103, 0, 0.85), rgba(255, 103, 0, 0.85)),
+    linear-gradient(rgba(255, 103, 0, 0.85), rgba(255, 103, 0, 0.85)),
+    linear-gradient(rgba(255, 103, 0, 0.85), rgba(255, 103, 0, 0.85));
+  background-position:
+    top left, top left, top right, top right,
+    bottom left, bottom left, bottom right, bottom right;
+  background-size:
+    10px 1px, 1px 10px, 10px 1px, 1px 10px,
+    10px 1px, 1px 10px, 10px 1px, 1px 10px;
+  background-repeat: no-repeat;
+}
+
+/* ================= HUD VIVO: punteros tácticos, crosshair, huella, pulso ================= */
+
+/* Puntero táctico del tier DOM: anillo radar-ping + glow del color de grupo */
+.st-tac {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  cursor: crosshair;
+}
+
+.st-tac-ring {
+  position: absolute;
+  inset: 2px;
+  border: 1px solid var(--g, #22d3ee);
+  border-radius: 50%;
+  opacity: 0;
+  pointer-events: none;
+  animation: st-ping 2.8s ease-out infinite;
+  animation-delay: var(--pd, 0s);
+}
+
+@keyframes st-ping {
+  0% {
+    transform: scale(0.45);
+    opacity: 0.9;
+  }
+  70%,
+  100% {
+    transform: scale(1.8);
+    opacity: 0;
+  }
+}
+
+.st-tac:hover .st-ico {
+  transform: rotate(var(--rot, 0deg)) scale(1.3);
+  transition: transform 0.12s ease;
+}
+
+/* Etiqueta inteligente: nombre en mono, visible con zoom ≥ 5 o en hover */
+.st-tac-label {
+  position: absolute;
+  left: 22px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.06em;
+  color: #cbd5e1;
+  text-shadow: 0 1px 3px #000, 0 0 6px #000;
+  white-space: nowrap;
+  pointer-events: none;
+  display: none;
+}
+
+.st-zoom-hi .st-tac-label,
+.st-tac:hover .st-tac-label {
+  display: block;
+}
+
+/* Crosshair biselado del seleccionado: 4 esquinas con destello escalonado */
+.st-cross i {
+  position: absolute;
+  width: 7px;
+  height: 7px;
+  border: 0 solid var(--accent);
+  pointer-events: none;
+  animation: st-flash 2.4s ease-in-out infinite;
+}
+
+.st-cross i:nth-child(1) { top: -10px; left: -10px; border-top-width: 2px; border-left-width: 2px; }
+.st-cross i:nth-child(2) { top: -10px; right: -10px; border-top-width: 2px; border-right-width: 2px; animation-delay: 0.6s; }
+.st-cross i:nth-child(3) { bottom: -10px; right: -10px; border-bottom-width: 2px; border-right-width: 2px; animation-delay: 1.2s; }
+.st-cross i:nth-child(4) { bottom: -10px; left: -10px; border-bottom-width: 2px; border-left-width: 2px; animation-delay: 1.8s; }
+
+@keyframes st-flash {
+  0%, 100% { opacity: 0.35; }
+  50% { opacity: 1; }
+}
+
+/* Huella de cobertura: gradiente radial SVG + anillo punteado rotatorio */
+.st-footprint {
+  fill: url(#stFootGrad);
+}
+
+.st-foot-ring {
+  fill: none;
+  stroke-dasharray: 2 7;
+  animation: st-dashspin 14s linear infinite;
+}
+
+@keyframes st-dashspin {
+  to {
+    stroke-dashoffset: -270;
+  }
+}
+
+/* Pulso lumínico que recorre la órbita futura: núcleo + halo de energía */
+.st-trackpulse-icon {
+  background: transparent;
+  border: none;
+}
+
+.st-trackpulse {
+  display: block;
+  width: 8px;
+  height: 8px;
+  margin: 1px;
+  border-radius: 50%;
+  background: #ffb27a;
+  box-shadow:
+    0 0 10px 2px rgba(255, 103, 0, 0.6),
+    0 0 26px 6px rgba(255, 103, 0, 0.25);
+  animation: st-energy 1s ease-in-out infinite;
+}
+
+@keyframes st-energy {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.35);
+    opacity: 0.8;
+  }
+}
+
+/* Micro-animación de telemetría: glitch de 1 frame al actualizar valores */
+.st-tval {
+  display: inline-block;
+  animation: st-flicker 140ms steps(2, end) 1;
+}
+
+@keyframes st-flicker {
+  0% {
+    opacity: 0.25;
+    transform: translateY(-1px) skewX(3deg);
+    text-shadow: 0 0 8px rgba(0, 242, 255, 0.8);
+  }
+  60% {
+    opacity: 0.9;
+  }
+  100% {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* Hover interactivo: expansión de brillo + viraje a naranja brillante */
+.st-dock-btn:hover,
+.st-chip:hover,
+.st-theater:hover,
+.st-kiosk:hover,
+.st-stats-toggle:hover,
+.st-track:hover,
+.st-close:hover,
+.st-group-head:hover,
+.st-sat-name:hover,
+.st-search button:hover:not(:disabled),
+.st-ghost:hover {
+  color: var(--accent-soft);
+  border-color: rgba(255, 103, 0, 0.6);
+  box-shadow: 0 0 14px -4px var(--accent-glow);
+  transition: color 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease,
+    background 0.2s ease;
+}
+
+/* Chips de estado industrial del dock */
+.st-stat {
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  letter-spacing: 0.1em;
+}
+
+.st-stat.ok {
+  color: var(--ok);
+}
+
+.st-stat.warn {
+  color: var(--warn);
+}
+
+.st-stat.ok::before {
+  content: "● ";
+  animation: st-blink 2s infinite;
+}
+
+.st-stat.warn::before {
+  content: "● ";
+  animation: st-blink 0.9s infinite;
+}
+
+/* ---------------- globo ortográfico: espacio profundo + atmósfera ---------------- */
+.st-globe-wrap {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(1px 1px at 12% 22%, rgba(255, 255, 255, 0.35), transparent 60%),
+    radial-gradient(1px 1px at 78% 12%, rgba(255, 255, 255, 0.25), transparent 60%),
+    radial-gradient(1.5px 1.5px at 32% 78%, rgba(255, 255, 255, 0.2), transparent 60%),
+    radial-gradient(1px 1px at 62% 58%, rgba(255, 255, 255, 0.28), transparent 60%),
+    radial-gradient(1px 1px at 88% 82%, rgba(255, 255, 255, 0.18), transparent 60%),
+    radial-gradient(1200px 900px at 50% 42%, #0a1424 0%, #030508 62%);
+}
+
+.st-globe {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  cursor: grab;
+  touch-action: none; /* arrastre de rotación táctil sin scroll fantasma */
+}
+
+.st-globe.st-globe-drag {
+  cursor: grabbing;
+}
+
+.st-globe.st-globe-hit {
+  cursor: pointer;
+}
+
+.st-globe-tip {
+  position: absolute;
+  z-index: 600;
+  transform: translate(-50%, calc(-100% - 12px));
+  pointer-events: none;
+}
+
+/* ---------------- responsive / multiplataforma ---------------- */
+@media (min-width: 1800px) {
+  .st-app {
+    --left-panel: 340px;
+    --right-panel: 440px;
+  }
+}
+
+/* Pantallas pequeñas o viewports cortos: métricas y paddings compactos */
+@media (max-width: 1024px), (max-height: 768px) {
+  .st-app {
+    --dock-zone: 104px; /* el dock envuelve en dos filas: más aire reservado */
+  }
+  .st-metrics {
+    gap: 6px;
+  }
+  .st-metrics b {
+    font-size: 12.5px;
+  }
+  .st-metrics > div {
+    padding: 5px 8px 4px;
+  }
+  .st-detail {
+    padding: 10px;
+  }
+  .st-sidebar {
+    padding: 8px 6px 16px;
+  }
+  .st-orbit-params dl {
+    grid-template-columns: 1fr;
+  }
+  .st-skyradar svg {
+    width: 200px;
+    height: 200px;
+  }
+  .st-dock {
+    gap: 6px;
+    padding: 5px 8px;
+  }
+}
+
+@media (max-width: 900px) {
+  .st-timebar-read {
+    display: none;
+  }
+}
+
+@media (max-width: 700px) {
+  /* La atribución pasa a la izquierda para no chocar con el dock centrado */
+  .leaflet-bottom.leaflet-right {
+    left: 8px;
+    right: auto;
+  }
+  .st-dock-status {
+    display: none;
+  }
+}
+
+/* Puntero táctil: objetivos mayores para pinch/tap sin conflictos */
+@media (pointer: coarse) {
+  .st-dock-btn,
+  .st-timebar-btns button {
+    min-height: 38px;
+    min-width: 38px;
+  }
+  .st-panel-tab {
+    width: 26px;
+    height: 84px;
+  }
+  .st-timebar input[type="range"] {
+    height: 28px;
+  }
+  .st-pop-cat,
+  .st-pop-row {
+    padding: 6px;
+  }
+}
+
+/* ---------------- scrollbars ---------------- */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #1e293b;
+  border-radius: 0;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #334155;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* ---------------- Cyberpunk Glitch & Theme Enhancements ---------------- */
+.st-glitch-btn {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--pink);
+  background: rgba(255, 45, 170, 0.1);
+  border: 1px solid rgba(255, 45, 170, 0.4);
+  padding: 4px 10px;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.st-glitch-btn:hover,
+.st-glitch-btn.on {
+  background: var(--pink);
+  color: #050505;
+  box-shadow: 0 0 12px rgba(255, 45, 170, 0.8);
+}
+
+@keyframes glitch-anim {
+  0% {
+    transform: translate(0);
+    filter: none;
+  }
+  20% {
+    transform: translate(-3px, 2px);
+    filter: drop-shadow(2px 0 var(--pink)) drop-shadow(-2px 0 var(--cyan));
+  }
+  40% {
+    transform: translate(2px, -2px);
+    filter: hue-rotate(90deg);
+  }
+  60% {
+    transform: translate(-2px, -2px);
+    filter: drop-shadow(-3px 0 var(--yellow)) drop-shadow(3px 0 var(--red));
+  }
+  80% {
+    transform: translate(3px, 3px);
+    filter: invert(0.1);
+  }
+  100% {
+    transform: translate(0);
+    filter: none;
+  }
+}
+
+.glitch-effect {
+  animation: glitch-anim 0.4s infinite linear;
+  position: relative;
+}
+
+.glitch-effect::before {
+  content: "";
+  position: absolute;
+  top: 0; left: 0; width: 100%; height: 100%;
+  background: linear-gradient(rgba(197, 0, 60, 0.05), rgba(0, 229, 255, 0.05));
+  pointer-events: none;
+  mix-blend-mode: color-dodge;
+  z-index: 9999;
+}
+
+/* ---------------- RESPONSIVE COMPACT MODE (Task 3) ---------------- */
+[data-size="compact"] .st-panel-tab {
+  display: none !important;
+}
+
+[data-size="compact"] .st-kiosk {
+  display: none !important;
+}
+
+[data-size="compact"] .st-header {
+  padding: calc(6px + env(safe-area-inset-top, 0px)) 12px 6px;
+  gap: 8px;
+  justify-content: space-between;
+}
+
+[data-size="compact"] .st-brand h1 {
+  font-size: 15px;
+  letter-spacing: 0.15em;
+}
+
+.st-compact-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.st-compact-meta {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  color: var(--muted);
+  border-top: 1px solid var(--line);
+  padding-top: 4px;
+  margin-top: 2px;
+}
+
+.st-compact-meta .ellipsis {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.st-mobile-search-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  background: rgba(4, 7, 12, 0.98);
+  padding: 10px 12px;
+  z-index: 50;
+  border-bottom: 1px solid var(--accent);
+}
+
+.st-mobile-search-overlay form {
+  display: flex;
+  gap: 6px;
+}
+
+.st-mobile-search-overlay input {
+  flex: 1;
+  padding: 8px 12px;
+  background: var(--bg-input);
+  border: 1px solid var(--accent);
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: 14px;
+  outline: none;
+}
+
+.st-mobile-menu-dropdown {
+  position: absolute;
+  top: 100%;
+  right: 8px;
+  background: var(--bg-panel);
+  border: 1px solid var(--line);
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  z-index: 60;
+  min-width: 160px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+}
+
+/* Bottom Navigation */
+.st-bottom-nav {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: calc(56px + env(safe-area-inset-bottom, 0px));
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  background: rgba(4, 7, 12, 0.94);
+  border-top: 1px solid var(--line);
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  z-index: 40;
+  backdrop-filter: blur(12px);
+}
+
+.st-bottom-nav-btn {
+  flex: 1;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  background: transparent;
+  border: none;
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.st-bottom-nav-btn svg {
+  stroke: var(--muted);
+  transition: stroke 0.2s ease;
+}
+
+.st-bottom-nav-btn.active,
+.st-bottom-nav-btn:hover {
+  color: var(--accent);
+}
+
+.st-bottom-nav-btn.active svg {
+  stroke: var(--accent);
+}
+
+.st-bottom-nav-btn.active {
+  border-top: 2px solid var(--accent);
+  background: rgba(34, 211, 238, 0.06);
+}
+
+.st-map-fab-toggle {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  background: rgba(4, 7, 12, 0.9);
+  border: 1px solid var(--accent);
+  color: var(--accent);
+  padding: 8px 14px;
+  border-radius: 20px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  z-index: 35;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.6);
+  cursor: pointer;
+}
+
+.st-onboarding-hint {
+  position: absolute;
+  bottom: calc(64px + env(safe-area-inset-bottom, 0px));
+  left: 12px;
+  right: 12px;
+  background: rgba(4, 7, 12, 0.95);
+  border: 1px solid var(--accent);
+  color: var(--text);
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-size: 12px;
+  z-index: 38;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.7);
+}
+
+/* Bottom Sheet */
+.st-bottom-sheet {
+  position: absolute;
+  bottom: calc(56px + env(safe-area-inset-bottom, 0px));
+  left: 0;
+  right: 0;
+  max-height: 75vh;
+  background: rgba(2, 6, 15, 0.98);
+  border-top: 1px solid var(--accent);
+  border-radius: 16px 16px 0 0;
+  padding: 12px 12px calc(16px + env(safe-area-inset-bottom, 0px));
+  z-index: 46;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  overflow-y: auto;
+  box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.8);
+  animation: slide-up 0.25s ease-out;
+  contain: layout style paint;
+  will-change: transform;
+}
+
+.st-bottom-sheet .st-sidebar {
+  position: static !important;
+  transform: none !important;
+  opacity: 1 !important;
+  pointer-events: auto !important;
+  width: 100% !important;
+  max-height: 65vh !important;
+  background: transparent !important;
+  border: none !important;
+  padding: 0 4px 16px !important;
+}
+
+@keyframes slide-up {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+
+.st-sheet-handle {
+  width: 40px;
+  height: 4px;
+  background: var(--line);
+  border-radius: 2px;
+  align-self: center;
+  margin-bottom: 4px;
+  cursor: pointer;
+}
+
+.st-sheet-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 8px;
+}
+
+.st-sheet-head h3 {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--accent);
+  text-transform: uppercase;
+}
+
+@keyframes sat-tap-pulse {
+  0% { transform: scale(1); filter: drop-shadow(0 0 0 rgba(0, 229, 255, 1)); }
+  50% { transform: scale(1.4); filter: drop-shadow(0 0 12px rgba(255, 103, 0, 0.9)); }
+  100% { transform: scale(1); filter: drop-shadow(0 0 0 rgba(0, 229, 255, 0)); }
+}
+
+.st-tap-pulse {
+  animation: sat-tap-pulse 0.6s ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, ::before, ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+.st-globe-controls {
+  position: absolute;
+  bottom: calc(70px + env(safe-area-inset-bottom, 0px));
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(4, 7, 12, 0.92);
+  border: 1px solid var(--accent);
+  padding: 6px 14px;
+  border-radius: 20px;
+  z-index: 35;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.8);
+}
+
+.st-globe-controls input[type="range"] {
+  width: 90px;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
