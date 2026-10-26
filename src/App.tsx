@@ -19,6 +19,7 @@ import SkyRadar from "./components/orbit/SkyRadar";
 import TelemetryConsole from "./components/console/TelemetryConsole";
 import Dock from "./components/hud/Dock";
 import BottomSheet from "./components/hud/BottomSheet";
+import ObserverPanel from "./components/observer/ObserverPanel";
 import { fetchCatalog } from "./lib/space/catalog.client";
 import { searchSatsByName } from "./lib/space/load-catalog";
 import { getFix, orbitParams } from "./lib/space/propagate";
@@ -811,6 +812,18 @@ export default function App() {
           </BottomSheet>
         )}
 
+        {/* TAREA 3 (brecha 3): destino Observador en compact — el mismo
+            ObserverPanel del panel de misión, en hoja inferior. */}
+        {isCompact && compactTab === "observer" && (
+          <BottomSheet onClose={() => setCompactTab(null)} snap={isPortrait} initialSnap="half">
+            <div className="st-sheet-head">
+              <h3>Observador</h3>
+              <button className="st-iconbtn" onClick={() => setCompactTab(null)}>×</button>
+            </div>
+            <ObserverPanel observer={observer} onSave={handleSaveObserver} onClear={handleClearObserver} date={now} />
+          </BottomSheet>
+        )}
+
         {!isCompact && (
           <Dock
             now={now}
@@ -889,6 +902,18 @@ export default function App() {
                 <polyline points="2 12 12 17 22 12"/>
               </svg>
               Capas
+            </button>
+            <button
+              className={`st-bottom-nav-btn ${compactTab === "observer" ? "active" : ""}`}
+              onClick={() => setCompactTab((c) => (c === "observer" ? null : "observer"))}
+              aria-label={compactTab === "observer" ? "Cerrar observador" : "Configurar observador terrestre"}
+              aria-pressed={compactTab === "observer"}
+            >
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+                <path d="M12 2a8 8 0 0 0-8 8c0 5.25 8 12 8 12s8-6.75 8-12a8 8 0 0 0-8-8z"/>
+                <circle cx="12" cy="10" r="3"/>
+              </svg>
+              Observador
             </button>
           </nav>
         )}
