@@ -107,7 +107,10 @@ test("filterActiveSatellites: activeSatellites limpio y stats cuadran", () => {
     row(FIXTURES[4], { line1: patchEpoch(FIXTURES[4].line1, NOW), name: "DEB SL-16 R/B" }),
     row(FIXTURES[5], { line1: patchEpoch(FIXTURES[5].line1, NOW), source: "ivan" }),
   ];
-  const { activeSatellites: sats, stats } = F.filterActiveSatellites(rows, { now: NOW });
+  const { activeSatellites: sats, stats } = F.filterActiveSatellites(rows, {
+    now: NOW,
+    decayCheck: false,
+  });
   assert.equal(sats.length, 3, "solo vigentes en activeSatellites");
   assert.deepEqual(sats.map((s) => s.id), [FIXTURES[0].id, FIXTURES[1].id, FIXTURES[5].id]);
   assert.equal(stats.seen, 6);
@@ -121,6 +124,21 @@ test("filterActiveSatellites: activeSatellites limpio y stats cuadran", () => {
     stats.valid + stats.invalid + stats.future + stats.expired + stats.junk + stats.implausible + stats.decayed,
     "invariante de auditoría seen = valid + Σ rechazos",
   );
-  assert.equal(stats.bySource.ivan, 1);
-  assert.equal(stats.seenBySource.ivan, 1);
+  assert.equal(rows[5].source, "ivan", "la fila de control debe llevar source=ivan");
+  assert.equal(
+    stats.seenBySource.ivan,
+    1,
+    `seenBySource=${JSON.stringify(stats.seenBySource)}`,
+  );
+  assert.equal(
+    stats.bySource.ivan,
+    1,
+    `bySource=${JSON.stringify(stats.bySource)} stats=${JSON.stringify({
+      valid: stats.valid,
+      decayed: stats.decayed,
+      invalid: stats.invalid,
+      expired: stats.expired,
+      junk: stats.junk,
+    })}`,
+  );
 });
