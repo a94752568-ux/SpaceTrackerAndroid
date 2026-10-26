@@ -79,3 +79,48 @@
   top: calc(8px + env(safe-area-inset-top, 0px));
   right: calc(8px + env(safe-area-inset-right, 0px));
 }
+
+/* ---------------- TAREA 3 (brecha 2): snap-points del bottom sheet ----------------
+   El componente BottomSheet publica data-snap (peek|half|tall) y la variable
+   --sheet-vh. Con data-snap la altura es fija por snap (ya no max-height 75vh),
+   de modo que el mapa queda siempre parcialmente visible; en peek, ≥ 60 %.
+   En landscape el sheet lateral no lleva data-snap y conserva sus reglas. */
+
+[data-size="compact"] .st-bottom-sheet[data-snap],
+.st-app.is-compact .st-bottom-sheet[data-snap] {
+  height: calc(var(--sheet-vh, 55) * 1vh);
+  max-height: none;
+  transition: height 0.22s ease-out;
+}
+
+/* Durante el drag la altura la fija --sheet-h (px, aplicada por ref);
+   sin transición para que el asa siga al dedo 1:1. */
+[data-size="compact"] .st-bottom-sheet[data-snap][data-dragging],
+.st-app.is-compact .st-bottom-sheet[data-snap][data-dragging] {
+  height: var(--sheet-h, 55vh);
+  transition: none;
+}
+
+/* El contenido interno no impone su propio tope: el sheet scrollea entero. */
+[data-size="compact"] .st-bottom-sheet[data-snap] .st-sidebar,
+.st-app.is-compact .st-bottom-sheet[data-snap] .st-sidebar {
+  max-height: none !important;
+}
+
+/* Asa arrastrable: zona táctil generosa (≥ 48 dp) sin engañar visualmente —
+   la pastilla visible sigue siendo 40×4, el área de agarre la aporta min-height.
+   touch-action:none evita que el WebView desplace la página durante el drag. */
+[data-size="compact"] .st-bottom-sheet .st-sheet-handle,
+.st-app.is-compact .st-bottom-sheet .st-sheet-handle {
+  min-height: 48px;
+  min-width: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  margin-bottom: 2px;
+  touch-action: none;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}

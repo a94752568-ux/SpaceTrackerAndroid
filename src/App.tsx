@@ -18,6 +18,7 @@ import SatDetail from "./components/orbit/SatDetail";
 import SkyRadar from "./components/orbit/SkyRadar";
 import TelemetryConsole from "./components/console/TelemetryConsole";
 import Dock from "./components/hud/Dock";
+import BottomSheet from "./components/hud/BottomSheet";
 import { fetchCatalog } from "./lib/space/catalog.client";
 import { searchSatsByName } from "./lib/space/load-catalog";
 import { getFix, orbitParams } from "./lib/space/propagate";
@@ -61,6 +62,7 @@ export default function App() {
   const viewport = useViewport();
   const isCompact = viewport.sizeClass === "compact";
   const isMedium = viewport.sizeClass === "medium";
+  const isPortrait = viewport.orientation === "portrait";
   const [compactTab, setCompactTab] = useState<"catalog" | "radar" | "time" | "layers" | "observer" | null>(null);
   const [showHint, setShowHint] = useState(() => !localStorage.getItem("spacetracker:dismiss-hint"));
 
@@ -578,6 +580,53 @@ export default function App() {
     }
   }, [activeGroup, mapSats, favIds]);
 
+  /* Contenido compartido entre el layout de escritorio y las hojas compactas
+     (Tarea 3): los paneles son los mismos, solo cambia el contenedor. */
+  const sidebarContent = (
+    <Sidebar
+      sats={allSats}
+      selectedId={selectedId}
+      fav={fav}
+      favIds={favIds}
+      query={query}
+      externals={externals.filter((e) => !payload?.sats.some((s) => s.id === e.id))}
+      onSelect={(s) => {
+        handleSelect(s);
+        if (isCompact) setCompactTab("radar");
+      }}
+      onToggleRadar={handleToggleRadar}
+      onRenameList={handleRenameList}
+      onDeleteList={handleDeleteList}
+      onRemoveFromList={handleToggleSatInList}
+      observer={observer}
+      date={now}
+      onSaveObserver={handleSaveObserver}
+      onClearObserver={handleClearObserver}
+    />
+  );
+
+  const drawerContent = (
+    <>
+      {drawerSat && observer && <SkyRadar sat={drawerSat} observer={observer} now={now} />}
+      {drawerSat && (
+        <SatDetail
+          sat={drawerSat}
+          observer={observer}
+          now={now}
+          fav={fav}
+          tracked={tracked}
+          onToggleSatInList={handleToggleSatInList}
+          onCreateList={handleCreateList}
+          onToggleTrack={() => setTracked((v) => !v)}
+          onClose={() => {
+            handleCloseDetail();
+            if (isCompact) setCompactTab(null);
+          }}
+        />
+      )}
+    </>
+  );
+
   const rootCls = `st-app${panels.left ? "" : " left-closed"}${isCompact ? " is-compact" : ""}${isMedium ? " is-medium" : ""}`;
 
   return (
@@ -685,60 +734,38 @@ export default function App() {
         )}
 
         {/* Sidebar: normal or compact bottom sheet */}
-        {(!isCompact || compactTab === "catalog") && (
-          <div className={isCompact ? "st-bottom-sheet" : isMedium ? "st-sidebar medium" : undefined}>
-            {isCompact && <div className="st-sheet-handle" onClick={() => setCompactTab(null)} />}
-            <Sidebar
-              sats={allSats}
-              selectedId={selectedId}
-              fav={fav}
-              favIds={favIds}
-              query={query}
-              externals={externals.filter((e) => !payload?.sats.some((s) => s.id === e.id))}
-              onSelect={(s) => {
-                handleSelect(s);
-                if (isCompact) setCompactTab("radar");
-              }}
-              onToggleRadar={handleToggleRadar}
-              onRenameList={handleRenameList}
-              onDeleteList={handleDeleteList}
-              onRemoveFromList={handleToggleSatInList}
-              observer={observer}
-              date={now}
-              onSaveObserver={handleSaveObserver}
-              onClearObserver={handleClearObserver}
-            />
-          </div>
+        {isCompact ? (
+          compactTab === "catalog" && (
+            <BottomSheet onClose={() => setCompactTab(null)} snap={isPortrait} initialSnap="tall">
+              {sidebarContent}
+            </BottomSheet>
+          )
+        ) : (
+          <div className={isMedium ? "st-sidebar medium" : undefined}>{sidebarContent}</div>
         )}
 
         {/* Drawer de detalles / Radar: normal o compact bottom sheet */}
-        {((!isCompact && selected) || (isCompact && (selected && compactTab === "radar"))) && (
-          <div className={isCompact ? "st-bottom-sheet open" : selected ? "st-right open hud-panel" : "st-right hud-panel"} aria-hidden={!selected && compactTab !== "radar"}>
-            {isCompact && <div className="st-sheet-handle" onClick={() => setCompactTab(null)} />}
-            {drawerSat && observer && <SkyRadar sat={drawerSat} observer={observer} now={now} />}
-            {drawerSat && (
-              <SatDetail
-                sat={drawerSat}
-                observer={observer}
-                now={now}
-                fav={fav}
-                tracked={tracked}
-                onToggleSatInList={handleToggleSatInList}
-                onCreateList={handleCreateList}
-                onToggleTrack={() => setTracked((v) => !v)}
-                onClose={() => {
-                  handleCloseDetail();
-                  if (isCompact) setCompactTab(null);
-                }}
-              />
-            )}
-          </div>
+        {isCompact ? (
+          selected &&
+          compactTab === "radar" && (
+            <BottomSheet
+              onClose={() => {
+                handleCloseDetail();
+                setCompactTab(null);
+              }}
+              snap={isPortrait}
+              initialSnap="half"
+            >
+              {drawerContent}
+            </BottomSheet>
+          )
+        ) : (
+          selected && <div className="st-right open hud-panel">{drawerContent}</div>
         )}
 
         {/* Compact bottom sheets for time / layers */}
         {isCompact && compactTab === "time" && (
-          <div className="st-bottom-sheet">
-            <div className="st-sheet-handle" onClick={() => setCompactTab(null)} />
+          <BottomSheet onClose={() => setCompactTab(null)} snap={isPortrait} initialSnap="peek">
             <div className="st-sheet-head">
               <h3>Control de Tiempo</h3>
               <button className="st-iconbtn" onClick={() => setCompactTab(null)}>×</button>
@@ -754,12 +781,11 @@ export default function App() {
                 <button className="st-ghost" onClick={() => handleShiftHours(24)}>+24h</button>
               </div>
             </div>
-          </div>
+          </BottomSheet>
         )}
 
         {isCompact && compactTab === "layers" && (
-          <div className="st-bottom-sheet">
-            <div className="st-sheet-handle" onClick={() => setCompactTab(null)} />
+          <BottomSheet onClose={() => setCompactTab(null)} snap={isPortrait} initialSnap="half">
             <div className="st-sheet-head">
               <h3>Capas, Vistas y Leyenda</h3>
               <button className="st-iconbtn" onClick={() => setCompactTab(null)}>×</button>
@@ -782,7 +808,7 @@ export default function App() {
                 </div>
               </div>
             </div>
-          </div>
+          </BottomSheet>
         )}
 
         {!isCompact && (
