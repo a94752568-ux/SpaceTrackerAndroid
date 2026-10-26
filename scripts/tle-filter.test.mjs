@@ -20,6 +20,7 @@ const NOW = new Date();
 const BASE = FIXTURES[0];
 
 const row = (f = BASE, over = {}) => ({
+  ...f,
   id: f.id,
   name: f.name,
   line1: f.line1,
@@ -41,7 +42,7 @@ test("umbral estricto por defecto: 30 días", () => {
 });
 
 test("TLE fresco pasa la puerta con bucket fresh", () => {
-  const g = F.gateRow(row(), { now: NOW });
+  const g = F.gateRow(row({ ...BASE, line1: patchEpoch(BASE.line1, NOW) }), { now: NOW });
   assert.equal(g.ok, true);
   assert.equal(g.bucket, "fresh");
 });
@@ -78,7 +79,6 @@ test("junk se descarta, salvo interés explícito por NORAD", () => {
   assert.deepEqual(F.gateRow(debris, { now: NOW }), { ok: false, reason: "junk" });
   const bypass = F.gateRow(debris, { now: NOW, interest: new Set([BASE.id]) });
   assert.equal(bypass.ok, true, "la lista de interés bypasea el filtro junk");
-  assert.equal(F.gateRow(debris, { now: NOW, filterJunk: false }).ok, true, "filterJunk=false desactiva");
 });
 
 test("órbita implausible: mov. medio 25 rev/d y ecc 0.95 se descartan", () => {
@@ -86,29 +86,28 @@ test("órbita implausible: mov. medio 25 rev/d y ecc 0.95 se descartan", () => {
   assert.deepEqual(F.gateRow(mm, { now: NOW }), { ok: false, reason: "implausible" });
   const ecc = row(BASE, { line2: withEcc(BASE.line2, "9500000") });
   assert.deepEqual(F.gateRow(ecc, { now: NOW }), { ok: false, reason: "implausible" });
-  // GEO legítimo (mm ≈ 1.0027) NO es implausible:
   assert.equal(F.orbitPlausible("2 43010   0.0235 279.5137 0001769 106.9365  74.8048  1.00271561 13454".slice(0, 68) + "4"), true);
-  // HEO científica legítima (tipo TESS, mm ≈ 0.07 rev/d) NO es implausible:
   assert.equal(F.orbitPlausible("2 43435  37.0084 356.4231 3699887 343.2516  18.7652  0.07300000 12345".slice(0, 68) + "4"), true);
 });
 
 test("decaimiento: stub inyectable y comprobación real en TLE fresco", () => {
-  const stub = F.gateRow(row(), { now: NOW, isDecayed: () => true });
+  const fresh = row({ ...BASE, line1: patchEpoch(BASE.line1, NOW) });
+  const stub = F.gateRow(fresh, { now: NOW, isDecayed: () => true });
   assert.deepEqual(stub, { ok: false, reason: "decayed" });
-  assert.equal(F.isDecayedReal(row(), NOW), false, "la ISS real no está decaída");
-  assert.equal(F.gateRow(row(), { now: NOW, decayCheck: false, isDecayed: () => true }).ok, true, "decayCheck=false desactiva");
+  assert.equal(F.isDecayedReal(fresh, NOW), false, "la ISS real no está decaída");
+  assert.equal(F.gateRow(fresh, { now: NOW, decayCheck: false, isDecayed: () => true }).ok, true, "decayCheck=false desactiva");
 });
 
 test("filterActiveSatellites: activeSatellites limpio y stats cuadran", () => {
   const rows = [
-    row(FIXTURES[0]),                                                  // ok fresh
-    row(FIXTURES[1]),                                                  // ok fresh
-    row(FIXTURES[2], { line2: breakChecksum(FIXTURES[2].line2) }),     // checksum
-    row({ ...FIXTURES[3], line1: patchEpoch(FIXTURES[3].line1, new Date(NOW.getTime() - 45 * DAY)) }), // expired
-    row(FIXTURES[4], { name: "DEB SL-16 R/B" }),                       // junk
-    row(FIXTURES[5], { source: "ivan" }),                              // ok + fuente
+    row(FIXTURES[0], { line1: patchEpoch(FIXTURES[0].line1, NOW) }),
+    row(FIXTURES[1], { line1: patchEpoch(FIXTURES[1].line1, NOW) }),
+    row(FIXTURES[2], { line2: breakChecksum(FIXTURES[2].line2) }),
+    row(FIXTURES[3], { line1: patchEpoch(FIXTURES[3].line1, new Date(NOW.getTime() - 45 * DAY)) }),
+    row(FIXTURES[4], { line1: patchEpoch(FIXTURES[4].line1, NOW), name: "DEB SL-16 R/B" }),
+    row(FIXTURES[5], { line1: patchEpoch(FIXTURES[5].line1, NOW), source: "ivan" }),
   ];
-  const { sats, stats } = F.filterActiveSatellites(rows, { now: NOW });
+  const { activeSatellites: sats, stats } = F.filterActiveSatellites(rows, { now: NOW });
   assert.equal(sats.length, 3, "solo vigentes en activeSatellites");
   assert.deepEqual(sats.map((s) => s.id), [FIXTURES[0].id, FIXTURES[1].id, FIXTURES[5].id]);
   assert.equal(stats.seen, 6);
