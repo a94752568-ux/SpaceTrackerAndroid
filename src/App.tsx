@@ -44,7 +44,7 @@ import {
   savePanels,
   type PanelsState,
 } from "./lib/ui/persistence";
-import { shiftMs, labelOffset } from "./lib/ui/timecontrol";
+import { shiftMs, labelOffset, offsetMinutes, RANGE_MIN } from "./lib/ui/timecontrol";
 import { teleLog } from "./lib/ui/telemetry-log";
 import { cycleFavorite, isTypingTarget } from "./lib/ui/hotkeys";
 import { MAX_DOM_MARKERS } from "./lib/ui/markers";
@@ -772,7 +772,20 @@ export default function App() {
               <button className="st-iconbtn" onClick={() => setCompactTab(null)}>×</button>
             </div>
             <div style={{ padding: "10px", display: "flex", flexDirection: "column", gap: "10px" }}>
-              <p style={{ margin: 0, fontSize: "12px" }}>Modo: {sim.mode}</p>
+              <p style={{ margin: 0, fontSize: "12px" }}>
+                Modo: {sim.mode === "live" ? "EN VIVO" : `SIM ${labelOffset(now.getTime() - realNow.getTime())}`}
+              </p>
+              {/* TAREA 3 (brecha 4): el mismo scrub ±24 h del TimeBar de
+                  escritorio — muestreo por minuto, congelado vía handleScrub. */}
+              <input
+                type="range"
+                min={-RANGE_MIN}
+                max={RANGE_MIN}
+                step={1}
+                value={offsetMinutes(now.getTime(), realNow.getTime())}
+                onChange={(e) => handleScrub(shiftMs(realNow.getTime(), Number(e.target.value) / 60))}
+                aria-label="Línea de tiempo (minutos respecto al tiempo real)"
+              />
               <button className="st-primary" onClick={sim.mode === "live" ? handlePause : handlePlayLive}>
                 {sim.mode === "live" ? "Pausar / Congelar" : "Volver a LIVE"}
               </button>
