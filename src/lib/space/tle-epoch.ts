@@ -93,8 +93,8 @@ export function diagnoseTleEpoch(
   const diffMs = now.getTime() - epochMs;
   const ageDays = diffMs / 86_400_000;
 
-  // Tolerancia para semillas o desfase de reloj de hasta 2 años en el futuro
-  if (diffMs < -86_400_000 * 730) {
+  // Época futura (más allá de la tolerancia de reloj/redondeo): rechazar.
+  if (diffMs < -FUTURE_TOLERANCE_MS) {
     return {
       status: "future",
       epochYear,
@@ -104,7 +104,8 @@ export function diagnoseTleEpoch(
       reason: `Época futura (${Math.abs(ageDays).toFixed(2)} días por delante)`,
     };
   }
-  const effectiveAge = Math.abs(ageDays);
+  // Edad no negativa tras la tolerancia (diffMs >= -FUTURE_TOLERANCE_MS).
+  const effectiveAge = Math.max(0, ageDays);
   const status: EpochStatus =
     effectiveAge <= FRESH_MAX_DAYS + BOUNDARY_EPS_DAYS
       ? "fresh"
