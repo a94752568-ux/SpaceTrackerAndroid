@@ -277,12 +277,31 @@ export default function MapView({
     
     mapRef.current = map;
     fleetRef.current = new FleetClient();
-    const ro = new ResizeObserver(() => {
-      map.invalidateSize({ animate: false });
-    });
+    let invRaf = 0;
+    const invalidate = () => {
+      cancelAnimationFrame(invRaf);
+      invRaf = requestAnimationFrame(() => {
+        map.invalidateSize({ animate: false });
+      });
+    };
+    const ro = new ResizeObserver(invalidate);
     if (containerRef.current) ro.observe(containerRef.current);
+    const vv = window.visualViewport;
+    vv?.addEventListener("resize", invalidate);
+    window.addEventListener("orientationchange", invalidate);
+    try {
+      const zc = (map as unknown as { zoomControl?: { setPosition: (p: string) => void } }).zoomControl;
+      if (zc && typeof window !== "undefined" && window.innerWidth < 600) {
+        zc.setPosition("bottomright");
+      }
+    } catch {
+      /* ignore */
+    }
     return () => {
+      cancelAnimationFrame(invRaf);
       ro.disconnect();
+      vv?.removeEventListener("resize", invalidate);
+      window.removeEventListener("orientationchange", invalidate);
       window.clearTimeout(trailTimerRef.current);
       fleetRef.current?.terminate();
       fleetRef.current = null;
