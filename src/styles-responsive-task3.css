@@ -1,0 +1,81 @@
+/* ---------------- TAREA 3 — cierre layout por sizeClass ---------------- */
+
+/* Targets táctiles ≥ 48dp en bottom nav */
+.st-bottom-nav-btn {
+  min-height: var(--touch-target-min, 48px);
+  min-width: var(--touch-target-min, 48px);
+}
+
+/* Backdrop de sheets (compact) */
+.st-sheet-backdrop {
+  position: absolute;
+  inset: 0;
+  z-index: 45;
+  border: 0;
+  padding: 0;
+  margin: 0;
+  background: rgba(0, 0, 0, 0.45);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Mapa ocupa todo el viewport en compact */
+[data-size="compact"] .st-map-area,
+.st-app.is-compact .st-map-area {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+}
+
+[data-size="medium"] .st-sidebar,
+.st-app.is-medium .st-sidebar {
+  width: min(280px, 40vw);
+}
+
+[data-size="medium"] .st-bottom-nav {
+  display: none !important;
+}
+
+[data-size="expanded"] .st-bottom-nav,
+[data-size="expanded"] .st-bottom-sheet,
+[data-size="expanded"] .st-sheet-backdrop {
+  display: none !important;
+}
+
+/* Landscape compact: sheet lateral derecho */
+[data-size="compact"][data-orientation="landscape"] .st-bottom-sheet {
+  top: 0;
+  bottom: 0;
+  left: auto;
+  right: 0;
+  width: min(420px, 48vw);
+  max-height: none;
+  height: 100%;
+  border-top: none;
+  border-left: 1px solid var(--accent);
+  border-radius: 0;
+  animation: sheet-in-right 0.22s ease-out;
+}
+
+[data-size="compact"][data-orientation="landscape"] .st-bottom-nav {
+  height: calc(48px + env(safe-area-inset-bottom, 0px));
+}
+
+[data-size="compact"][data-orientation="landscape"] .st-bottom-nav-btn {
+  font-size: 10px;
+  gap: 2px;
+}
+
+@keyframes sheet-in-right {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
+}
+
+[data-size="compact"] .st-sidebar {
+  box-shadow: none;
+}
+
+[data-size="compact"] .st-map-fab-toggle {
+  top: calc(8px + env(safe-area-inset-top, 0px));
+  right: calc(8px + env(safe-area-inset-right, 0px));
+}
