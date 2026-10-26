@@ -18,7 +18,7 @@
     "cap:sync": "cap sync",
     "cap:android": "cap open android",
     "cap:ios": "cap open ios",
-    "test": "node --test scripts/a11y-check.test.mjs scripts/tle-validation.test.mjs scripts/tle-epoch.test.mjs scripts/orbit-passes.test.mjs scripts/live-catalog-epoch.test.mjs scripts/catalog-sources.test.mjs scripts/catalog-fallback.test.mjs scripts/ui-smoke.test.mjs scripts/map-tiles.test.mjs scripts/favorites.test.mjs scripts/map-markers.test.mjs scripts/time-sim.test.mjs scripts/telemetry-log.test.mjs scripts/hotkeys.test.mjs scripts/export-passes.test.mjs scripts/terminator.test.mjs scripts/fleet-compute.test.mjs scripts/map-css.test.mjs scripts/native-guards.test.mjs scripts/tle-filter.test.mjs scripts/ortho.test.mjs",
+    "test": "node --test scripts/a11y-check.test.mjs scripts/tle-validation.test.mjs scripts/tle-epoch.test.mjs scripts/orbit-passes.test.mjs scripts/live-catalog-epoch.test.mjs scripts/catalog-sources.test.mjs scripts/catalog-fallback.test.mjs scripts/ui-smoke.test.mjs scripts/map-tiles.test.mjs scripts/favorites.test.mjs scripts/map-markers.test.mjs scripts/time-sim.test.mjs scripts/telemetry-log.test.mjs scripts/hotkeys.test.mjs scripts/export-passes.test.mjs scripts/terminator.test.mjs scripts/fleet-compute.test.mjs scripts/map-css.test.mjs scripts/native-guards.test.mjs scripts/tle-filter.test.mjs scripts/ortho.test.mjs scripts/viewport.test.mjs",
     "test:live": "RUN_LIVE=1 node --test scripts/network-live.test.mjs",
     "seed:generate": "node scripts/generate-seed.mjs",
     "report": "node scripts/generate-agent-context.cjs",
