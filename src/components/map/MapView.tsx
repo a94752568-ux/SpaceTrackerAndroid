@@ -572,7 +572,18 @@ export default function MapView({
           iconAnchor: [14, 14],
         }),
         zIndexOffset: 900,
-      }).addTo(map);
+      });
+      moonMarkerRef.current.on("click", (e) => {
+        L.DomEvent.stopPropagation(e);
+        onSelectRef.current({
+          id: 999999,
+          name: "Luna (Moon)",
+          line1: "",
+          line2: "",
+          group: "science",
+        });
+      });
+      moonMarkerRef.current.addTo(map);
     } else {
       moonMarkerRef.current.setLatLng(latlng);
     }

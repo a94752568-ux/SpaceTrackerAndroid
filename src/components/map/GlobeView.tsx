@@ -1,12 +1,5 @@
 /**
- * GlobeView — globo terráqueo en PROYECCIÓN ORTOGRÁFICA 2D con respiración canvas.
- *
- * Render: un único <canvas> con:
- *  - caché offscreen de la esfera (halo atmosférico, océano espacial, graticula y
- *    continentes 110 m vía d3-geo + world-atlas), repintada solo cuando cambia
- *    rotación/zoom;
- *  - capa dinámica por frame con respiración (scale), glow sincronizado y doble pasada;
- *  - controles interactivos: Botón Play/Pause para auto-rotación automática + slider de velocidad.
+ * GlobeView — globo terráqueo en PROYECCIÓN ORTOGRÁFICA 2D con respiración canvas y alto rendimiento.
  */
 import { useEffect, useRef, useState } from "react";
 import { geoGraticule10, geoOrthographic, geoPath } from "../../vendor/d3-geo/index.js";
@@ -140,26 +133,17 @@ export default function GlobeView({
       canvas.height = Math.max(1, Math.round(h * dpr));
       off.width = canvas.width;
       off.height = canvas.height;
-      if (viewRef.current.scale === 0) viewRef.current.scale = Math.min(w, h) * 0.42;
+      if (viewRef.current.scale === 0) viewRef.current.scale = Math.min(w, h) * 0.40;
       cacheKey = "";
     };
     resize();
     const ro = new ResizeObserver(resize);
     ro.observe(wrap);
 
-    // Pause animation when canvas is not visible
-    let isVisible = true;
-    const io = new IntersectionObserver((entries) => {
-      for (const entry of entries) {
-        isVisible = entry.isIntersecting;
-      }
-    }, { threshold: 0.1 });
-    io.observe(canvas);
-
     const drawEarth = () => {
       const v = viewRef.current;
       const cx = w / 2;
-      const cy = h / 2;
+      const cy = h / 2 - 14;
       const projection = geoOrthographic()
         .rotate([-v.lonDeg, -v.latDeg])
         .scale(v.scale)
@@ -187,9 +171,9 @@ export default function GlobeView({
         cy,
         v.scale,
       );
-      ocean.addColorStop(0, getComputedStyle(document.documentElement).getPropertyValue('--ocean-dark').trim() || "#081326");
-      ocean.addColorStop(0.7, getComputedStyle(document.documentElement).getPropertyValue('--ocean-mid').trim() || "#040914");
-      ocean.addColorStop(1, getComputedStyle(document.documentElement).getPropertyValue('--ocean-light').trim() || "#010306");
+      ocean.addColorStop(0, "#081326");
+      ocean.addColorStop(0.7, "#040914");
+      ocean.addColorStop(1, "#010306");
       octx.beginPath();
       path({ type: "Sphere" } as never);
       octx.fillStyle = ocean;
@@ -224,35 +208,23 @@ export default function GlobeView({
 
     let raf = 0;
     let prevT = performance.now();
-    let frameCount = 0;
-    let lastFpsCheck = performance.now();
-    const TARGET_FPS = 30;
-    const FRAME_INTERVAL = 1000 / TARGET_FPS;
+    const FRAME_INTERVAL = 1000 / 60; // 60 FPS cap for high performance
     let lastFrameTime = 0;
 
     const draw = (t: number) => {
       raf = requestAnimationFrame(draw);
 
-      // Skip rendering if not visible
-      if (!isVisible) {
-        return;
-      }
-
-      // FPS limiting
       const elapsed = t - lastFrameTime;
-      if (elapsed < FRAME_INTERVAL) {
-        return;
-      }
+      if (elapsed < FRAME_INTERVAL) return;
       lastFrameTime = t - (elapsed % FRAME_INTERVAL);
 
       const dt = Math.min(100, t - prevT);
       prevT = t;
       const v = viewRef.current;
       const cx = w / 2;
-      const cy = h / 2;
+      const cy = h / 2 - 14;
       const sel = selectedRef.current;
 
-      // SIN rotación perpetua: el globo queda estático por defecto.
       if (autoRotateRef.current) {
         v.lonDeg = wrapLonDeg(v.lonDeg + speedRef.current * (dt / 1000));
       }
@@ -270,7 +242,8 @@ export default function GlobeView({
         }
       }
 
-      const key = `${v.lonDeg.toFixed(1)}|${v.latDeg.toFixed(1)}|${Math.round(v.scale)}`;
+      // Cuantizar key para evitar redibujos offscreen innecesarios (mejora de rendimiento)
+      const key = `${(Math.round(v.lonDeg * 2) / 2).toFixed(1)}|${(Math.round(v.latDeg * 2) / 2).toFixed(1)}|${Math.round(v.scale)}`;
       if (key !== cacheKey) {
         cacheKey = key;
         drawEarth();
@@ -401,7 +374,7 @@ export default function GlobeView({
           ctx.save();
           ctx.translate(p.x, p.y);
           ctx.rotate(Math.PI / 4);
-          ctx.fillStyle = "#ff6700"; // Canvas colors kept as fallback (matches --selection-orange)
+          ctx.fillStyle = "#ff6700";
           ctx.shadowColor = "rgba(255,103,0,.9)";
           ctx.shadowBlur = glowBlur;
           ctx.fillRect(-3.5, -3.5, 7, 7);
@@ -416,7 +389,7 @@ export default function GlobeView({
         ctx.translate(moonProj.x, moonProj.y);
         ctx.shadowColor = "rgba(226, 232, 240, 0.9)";
         ctx.shadowBlur = glowBlur;
-        ctx.fillStyle = "#e2e8f0"; // Canvas colors kept as fallback (matches --moon-color)
+        ctx.fillStyle = "#e2e8f0";
         ctx.beginPath();
         ctx.arc(0, 0, 4.5, 0, Math.PI * 2);
         ctx.fill();
@@ -563,7 +536,6 @@ export default function GlobeView({
     return () => {
       cancelAnimationFrame(raf);
       ro.disconnect();
-      io.disconnect();
       canvas.removeEventListener("pointerdown", down);
       canvas.removeEventListener("pointermove", move);
       canvas.removeEventListener("pointerup", up);
