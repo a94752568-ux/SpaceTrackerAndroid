@@ -4,6 +4,7 @@ import { createRoot } from "react-dom/client";
 import "leaflet/dist/leaflet.css";
 import "./styles.css";
 import "./styles-responsive-task3.css";
+import "./styles-responsive-task5.css";
 import App from "./App";
 
 const rootEl = document.getElementById("root");

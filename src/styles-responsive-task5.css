@@ -1,0 +1,163 @@
+/* ==========================================================================
+   Tarea 5 — Tipografía, targets táctiles y paneles legibles en compact
+   Se carga después de styles.css y styles-responsive-task3.css
+   ========================================================================== */
+
+/* --- Tipografía fluida (respeta preferencia del sistema vía rem) --- */
+:root {
+  --st-fs-body: clamp(0.875rem, 0.8rem + 0.35vw, 1rem); /* ~14–16px */
+  --st-fs-ui: clamp(0.75rem, 0.7rem + 0.3vw, 0.875rem); /* ~12–14px */
+  --st-fs-label: clamp(0.6875rem, 0.65rem + 0.25vw, 0.8125rem);
+  --st-touch-min: 48px;
+}
+
+html {
+  font-size: 100%; /* no forzar px que ignore el zoom del SO */
+}
+
+body,
+.st-app {
+  font-size: var(--st-fs-body);
+  line-height: 1.45;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+/* Campos de texto ≥16px: evita zoom automático del WebView Android */
+.st-app input,
+.st-app textarea,
+.st-app select {
+  font-size: max(16px, var(--st-fs-body));
+}
+
+/* --- Compact: targets ≥48dp, menos blur/glow --- */
+[data-size="compact"] .st-btn,
+[data-size="compact"] button.st-ghost,
+[data-size="compact"] button.st-primary,
+[data-size="compact"] .st-bottom-nav button,
+[data-size="compact"] .st-tab,
+.st-app.is-compact .st-btn,
+.st-app.is-compact button.st-ghost,
+.st-app.is-compact button.st-primary,
+.st-app.is-compact .st-bottom-nav button {
+  min-height: var(--st-touch-min);
+  min-width: var(--st-touch-min);
+  padding: 0.5rem 0.75rem;
+}
+
+[data-size="compact"] .st-list-row,
+[data-size="compact"] .st-sat-row,
+[data-size="compact"] .st-fav-row,
+.st-app.is-compact .st-list-row,
+.st-app.is-compact .st-sat-row {
+  min-height: var(--st-touch-min);
+  align-items: center;
+}
+
+/* Filas/listas: elipsis, sin desborde horizontal */
+[data-size="compact"] .st-sidebar,
+[data-size="compact"] .st-bottom-sheet,
+[data-size="compact"] .st-right,
+.st-app.is-compact .st-sidebar,
+.st-app.is-compact .st-bottom-sheet,
+.st-app.is-compact .st-right {
+  overflow-x: hidden;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+[data-size="compact"] .st-sat-name,
+[data-size="compact"] .st-list-row,
+[data-size="compact"] .st-header-title,
+.st-app.is-compact .st-sat-name,
+.st-app.is-compact .st-list-row {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+}
+
+/* Header más compacto y legible */
+[data-size="compact"] .st-header,
+.st-app.is-compact .st-header {
+  gap: 0.35rem;
+  flex-wrap: wrap;
+  font-size: var(--st-fs-ui);
+}
+
+[data-size="compact"] .st-header .st-brand,
+.st-app.is-compact .st-header .st-brand {
+  font-size: var(--st-fs-body);
+}
+
+/* Reducir glassmorphism / blur en compact (rendimiento + legibilidad) */
+[data-size="compact"] .st-header,
+[data-size="compact"] .st-sidebar,
+[data-size="compact"] .st-bottom-sheet,
+[data-size="compact"] .st-right,
+[data-size="compact"] .hud-panel,
+.st-app.is-compact .st-header,
+.st-app.is-compact .st-sidebar,
+.st-app.is-compact .st-bottom-sheet,
+.st-app.is-compact .st-right,
+.st-app.is-compact .hud-panel {
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  box-shadow: none;
+}
+
+[data-size="compact"] .st-glow,
+[data-size="compact"] .st-hyper-glow,
+.st-app.is-compact .st-glow,
+.st-app.is-compact .st-hyper-glow {
+  filter: none;
+  text-shadow: 0 0 6px rgba(255, 103, 0, 0.45);
+}
+
+/* prefers-reduced-motion: desactivar animaciones decorativas */
+@media (prefers-reduced-motion: reduce) {
+  .st-app *,
+  .st-app *::before,
+  .st-app *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  .st-app .st-glow,
+  .st-app .st-hyper-glow {
+    filter: none;
+    text-shadow: none;
+  }
+}
+
+/* Contraste de texto sobre mapa/globo */
+[data-size="compact"] .st-bottom-sheet,
+[data-size="compact"] .st-right,
+.st-app.is-compact .st-bottom-sheet,
+.st-app.is-compact .st-right {
+  background: rgba(3, 5, 8, 0.92);
+  color: #f5f7fa;
+}
+
+/* PlaceSearch / inputs en barra */
+[data-size="compact"] .st-search input,
+.st-app.is-compact .st-search input {
+  min-height: var(--st-touch-min);
+  font-size: 16px;
+}
+
+/* Bottom nav labels legibles */
+[data-size="compact"] .st-bottom-nav span,
+.st-app.is-compact .st-bottom-nav span {
+  font-size: var(--st-fs-label);
+  line-height: 1.2;
+}
+
+/* Medium: targets un poco más holgados sin bottom nav */
+[data-size="medium"] .st-btn,
+[data-size="medium"] .st-list-row,
+.st-app.is-medium .st-btn,
+.st-app.is-medium .st-list-row {
+  min-height: 44px;
+}
