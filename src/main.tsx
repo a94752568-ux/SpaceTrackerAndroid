@@ -5,6 +5,7 @@ import "leaflet/dist/leaflet.css";
 import "./styles.css";
 import "./styles-responsive-task3.css";
 import "./styles-responsive-task5.css";
+import "./styles-immersion.css";
 import App from "./App";
 import { installAndroidChrome } from "./lib/ui/androidChrome";
 
