@@ -1,5 +1,5 @@
 # INFORME DE ESTADO PARA AGENTE DE IA (SESSION CONTEXT)
-> **Actualizado manualmente:** 2026-10-26T22:18:00Z (sesión responsive móvil)
+> **Actualizado:** 2026-10-26T22:25:00Z (sesión responsive móvil)
 
 ## 1. Identificación del Proyecto
 * **Nombre:** spacetracker
@@ -11,99 +11,78 @@
 
 ## 2. Ruta de trabajo actual
 
-**Objetivo de la rama:** interfaz adaptable a cualquier pantalla (plan en `android/PROMPT_AGENTE_RESPONSIVE_MOVIL.md`).
+**Objetivo de la rama:** interfaz adaptable a cualquier pantalla (`android/PROMPT_AGENTE_RESPONSIVE_MOVIL.md`).
 
 | Tarea | Título | Estado remoto |
 |---|---|---|
-| 0 | Diagnóstico / línea base | No formalizado en docs/responsive/DIAGNOSTICO.md |
-| 1 | Fundamentos (viewport, dvh, safe areas) | Parcial (meta viewport-fit, 100dvh, safe-top en header) |
-| 2 | Detección de pantalla (`useViewport`) | **Hecha** — `src/lib/ui/useViewport.ts` + `scripts/viewport.test.mjs` + `docs/responsive/TAREA2_VIEWPORT.md` |
-| 3 | Layout por sizeClass (sheets, bottom nav) | **Código + scripts listos**; requiere App.tsx restaurado — `docs/responsive/TAREA3_LAYOUT.md`, `scripts/restore-app-task3.mjs` |
-| 4 | Globo y mapa al contenedor / DPR | **Script listo** — `scripts/apply-task4-map.mjs` + `docs/responsive/TAREA4_GLOBE_MAP.md` |
-| 5 | Tipografía y controles táctiles | Pendiente |
+| 0 | Diagnóstico / línea base | Parcial |
+| 1 | Fundamentos (viewport, dvh, safe areas) | Parcial |
+| 2 | Detección de pantalla (`useViewport`) | **Hecha** |
+| 3 | Layout por sizeClass (sheets, bottom nav) | **Hecha** en `App.tsx` (compactTab, bottom nav, Escape) |
+| 4 | Globo y mapa al contenedor / DPR | **Script listo** — falta `node scripts/apply-task4-map.mjs` + commit |
+| 5 | Tipografía y controles táctiles | **Hecha** — `styles-responsive-task5.css` + import en `main.tsx` |
 | 6 | Android edge-to-edge / teclado / rotación | Pendiente |
 | 7 | Matriz de dispositivos + capturas | Pendiente |
 | 8 | Entrega / commits atómicos / GUIA.md | Pendiente |
 
-## 3. BLOQUEANTE — corrupción en remoto (prioridad #1)
+## 3. Recuperación App/styles — RESUELTA en remoto
 
-En `origin/ui/responsive-movil` estos archivos **siguen corruptos** (verificar con `curl`/`wc`):
+API GitHub confirma contenido completo:
 
-| Archivo | Estado en remoto | Debe ser |
-|---|---|---|
-| `src/App.tsx` | Stub “RESTORE_PENDING…” (~15 líneas) | App completa (~870+ líneas) con compactTab / sheets |
-| `src/styles.css` | Texto `SEE_FILE` (8 bytes) | Tema Mission Control (~61 KB) |
+| Archivo | Estado |
+|---|---|
+| `src/App.tsx` | Completo (~35 KB) con `useViewport`, `compactTab`, sheets |
+| `src/styles.css` | Tema Mission Control (~61 KB) |
 
-**Síntoma en localhost:** fondo blanco, tipografía del sistema, sin HUD/mapa estilizado.
+Si localhost sigue en blanco: `git pull` + hard refresh (`Ctrl+Shift+R`). No usar caché vieja de raw CDN.
 
-### Recuperación obligatoria (local → push)
+## 4. Acción inmediata del desarrollador
 
 ```bash
 git pull origin ui/responsive-movil
-node scripts/restore-styles.mjs          # styles.css desde commit 2a4758f
-node scripts/restore-app-task3.mjs       # App.tsx bueno + parches Tarea 3
-node scripts/apply-task4-map.mjs         # GlobeView + MapView Tarea 4
-npm run typecheck && node --test scripts/ortho.test.mjs scripts/viewport.test.mjs
-npm run dev                              # hard refresh Ctrl+Shift+R
-git add src/App.tsx src/styles.css src/components/map/
-git commit -m "fix(ui): restaurar App.tsx y styles.css + Tareas 3-4"
+
+# Tarea 4 (globo/mapa) — aún no aplicada en los .tsx del remoto
+node scripts/apply-task4-map.mjs
+
+npm run typecheck
+node --test scripts/ortho.test.mjs scripts/viewport.test.mjs
+npm run dev   # DevTools 360×800; verificar tema oscuro + targets 48px
+
+git add src/components/map/GlobeView.tsx src/components/map/MapView.tsx
+git commit -m "fix(map): globo y mapa adaptativos (Tarea 4)"
 git push origin ui/responsive-movil
 ```
 
-Guía: `docs/responsive/RECOVERY.md`
-
-**Commit bueno de referencia (pre-corrupción):** `2a4758f5391b30a722ac193dade79eef09e1452c`
-
-## 4. Scripts de agente en la rama
+## 5. Scripts de agente
 
 | Script | Función |
 |---|---|
-| `scripts/restore-styles.mjs` | Restaura `styles.css` desde commit bueno |
-| `scripts/restore-app-task3.mjs` | Restaura `App.tsx` + parches Tarea 3 |
-| `scripts/apply-task4-map.mjs` | Parchea GlobeView/MapView (fitScale, pinch, invalidateSize) |
-| `scripts/viewport.test.mjs` | Tests clasificación MD3 (599/600, 839/840) |
+| `scripts/apply-task4-map.mjs` | Parchea GlobeView/MapView (fitScale 0.40, pinch, invalidateSize+rAF) |
+| `scripts/viewport.test.mjs` | Tests MD3 sizeClass |
+| `scripts/restore-styles.mjs` / `restore-app-task3.mjs` | Solo si vuelve a corromperse |
 
-## 5. Estado de módulos base (pre-responsive)
+## 6. Tarea 5 (aplicada)
 
-- [x] Layout 100dvh / anti-solapes (diseño base)
-- [x] Filtro estricto de TLEs obsoletos
-- [x] Estética HUD (glassmorphism + glow `#FF6700`)
-- [x] Globo ortográfico 2D (d3-geo; drag X/Y; `ortho.test.mjs`)
-- [x] Modo kiosco / F11 Tauri v2
-- [x] Favoritos v2 + radar personal
-- [x] Capacitor Android + targetSdk prep (rama origen playstore-prep)
+* `src/styles-responsive-task5.css` — tipografía `clamp`, inputs ≥16px, targets 48px, blur reducido en compact, `prefers-reduced-motion`
+* Import en `src/main.tsx` (después de task3)
+* Doc: `docs/responsive/TAREA5_TIPOGRAFIA.md`
 
-## 6. Decisiones de diseño responsive (acordadas)
+## 7. Próximo paso
 
-* **sizeClass MD3:** compact ≤599 · medium 600–839 · expanded ≥840
-* **compact:** mapa full + bottom nav (Catálogo / Radar / Tiempo / Capas) + un bottom sheet a la vez; Dock oculto
-* **medium:** sidebar más estrecha; Dock visible; sin bottom nav
-* **expanded / kiosco:** layout desktop sin cambios visibles
-* **Globo:** `ResizeObserver` del wrap; DPR cap 2; fit `min(w,h)*0.42`; zoom relativo al redimensionar; pellizco
-* **Mapa:** `invalidateSize` con rAF + visualViewport + orientationchange; zoom control bottomright si width < 600
+1. Aplicar Tarea 4 localmente y pushear GlobeView/MapView.
+2. Verificar UI 360×800 (tema oscuro, sheets, 48dp, sin zoom en inputs).
+3. **Tarea 6** — Android edge-to-edge, teclado, rotación (`android/PROMPT_AGENTE_RESPONSIVE_MOVIL.md`).
 
-## 7. Próximo paso recomendado
+## 8. Decisiones de diseño
 
-1. **Desbloquear:** ejecutar recuperación (§3) y **confirmar push** de `App.tsx` + `styles.css` reales (no stub / no SEE_FILE).
-2. Verificar en navegador tema oscuro + mapa/globo.
-3. Continuar **Tarea 5** (tipografía fluida, targets 48dp, paneles legibles en 360×800) según `android/PROMPT_AGENTE_RESPONSIVE_MOVIL.md`.
+* sizeClass MD3: compact ≤599 · medium 600–839 · expanded ≥840
+* compact: bottom nav + un sheet; Dock oculto
+* Globo: ResizeObserver wrap; DPR cap 2; fit `min(w,h)*0.40`; zoom relativo; pellizco
+* Mapa: invalidateSize rAF + visualViewport + orientationchange; zoom bottomright si width < 600
 
-## 8. Archivos clave
-
-```
-android/PROMPT_AGENTE_RESPONSIVE_MOVIL.md   # plan maestro tareas 0–8
-src/lib/ui/useViewport.ts                  # Tarea 2
-src/styles-responsive-task3.css            # extras CSS Tarea 3 (import en main.tsx)
-docs/responsive/TAREA2_VIEWPORT.md
-docs/responsive/TAREA3_LAYOUT.md
-docs/responsive/TAREA4_GLOBE_MAP.md
-docs/responsive/RECOVERY.md
-UI_MAINTENANCE.md                          # reglas UI a largo plazo
-```
-
-## 9. Restricciones del plan responsive
+## 9. Restricciones
 
 * No tocar `~/SpaceTracker` ni `~/SpaceTracker2`.
-* No añadir dependencias/plugins Capacitor sin preguntar.
-* No romper lógica orbital, filtro TLE ni matemáticas del globo (drag X/Y).
-* Un cambio por etapa; commits atómicos; evidencia antes de dar por verificada una tarea.
+* No añadir dependencias Capacitor sin preguntar.
+* No romper lógica orbital / drag X/Y del globo.
+* Commits atómicos; evidencia antes de marcar tarea verificada.
