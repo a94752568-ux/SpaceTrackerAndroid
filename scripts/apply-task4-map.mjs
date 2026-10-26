@@ -1,5 +1,5 @@
 /**
- * Tarea 4 — aplica parches a GlobeView y MapView desde el remoto actual.
+ * Aplica Tarea 4 a GlobeView + MapView (fuente actual de la rama).
  * Uso: node scripts/apply-task4-map.mjs
  */
 import { readFileSync, writeFileSync } from "node:fs";
@@ -11,7 +11,7 @@ const GLOBE = join(ROOT, "src/components/map/GlobeView.tsx");
 const MAP = join(ROOT, "src/components/map/MapView.tsx");
 
 function mustReplace(text, old, neu, label) {
-  if (!text.includes(old)) throw new Error(`No encontrado: ${label}`);
+  if (!text.includes(old)) throw new Error("No encontrado: " + label);
   return text.replace(old, neu);
 }
 
@@ -29,16 +29,15 @@ if (globe.includes("fitScale")) {
       canvas.height = Math.max(1, Math.round(h * dpr));
       off.width = canvas.width;
       off.height = canvas.height;
-      if (viewRef.current.scale === 0) viewRef.current.scale = Math.min(w, h) * 0.42;
+      if (viewRef.current.scale === 0) viewRef.current.scale = Math.min(w, h) * 0.40;
       cacheKey = "";
     };
     resize();
     const ro = new ResizeObserver(resize);
     ro.observe(wrap);`,
-    `    /** Escala que encaja el globo completo en el contenedor (relación 1:1, margen ~16%). */
-    const fitScale = (cw: number, ch: number) => Math.max(40, Math.min(cw, ch) * 0.42);
+    `    /** Escala que encaja el globo completo (1:1, margen ~20%). */
+    const fitScale = (cw: number, ch: number) => Math.max(40, Math.min(cw, ch) * 0.40);
 
-    // Factor de zoom del usuario respecto al "fit" actual (1 = globo completo centrado).
     let userZoom = 1;
     let prevFit = 0;
     let resizeRaf = 0;
@@ -76,7 +75,7 @@ if (globe.includes("fitScale")) {
     resize();
     const ro = new ResizeObserver(scheduleResize);
     ro.observe(wrap);`,
-    "GlobeView.resize",
+    "GlobeView.resize"
   );
 
   globe = mustReplace(
@@ -95,7 +94,6 @@ if (globe.includes("fitScale")) {
     return () => {
       cancelAnimationFrame(raf);
       ro.disconnect();
-      io.disconnect();
       canvas.removeEventListener("pointerdown", down);
       canvas.removeEventListener("pointermove", move);
       canvas.removeEventListener("pointerup", up);
@@ -152,7 +150,6 @@ if (globe.includes("fitScale")) {
       cancelAnimationFrame(raf);
       cancelAnimationFrame(resizeRaf);
       ro.disconnect();
-      io.disconnect();
       canvas.removeEventListener("pointerdown", down);
       canvas.removeEventListener("pointermove", move);
       canvas.removeEventListener("pointerup", up);
@@ -162,15 +159,14 @@ if (globe.includes("fitScale")) {
       canvas.removeEventListener("pointerup", onPtrUpPinch);
       canvas.removeEventListener("pointercancel", onPtrUpPinch);
       canvas.removeEventListener("wheel", wheel);`,
-    "GlobeView.wheel+listeners",
+    "GlobeView.wheel"
   );
-
   writeFileSync(GLOBE, globe);
   console.log("OK GlobeView");
 }
 
 let map = readFileSync(MAP, "utf8");
-if (map.includes("visualViewport") && map.includes("invRaf")) {
+if (map.includes("invRaf") && map.includes("visualViewport")) {
   console.log("MapView ya tiene Tarea 4, se omite");
 } else {
   map = mustReplace(
@@ -206,10 +202,9 @@ if (map.includes("visualViewport") && map.includes("invRaf")) {
       ro.disconnect();
       vv?.removeEventListener("resize", invalidate);
       window.removeEventListener("orientationchange", invalidate);`,
-    "MapView.invalidate",
+    "MapView.invalidate"
   );
   writeFileSync(MAP, map);
   console.log("OK MapView");
 }
-
 console.log("Tarea 4 aplicada.");
