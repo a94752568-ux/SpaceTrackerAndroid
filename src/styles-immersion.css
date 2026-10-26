@@ -1,4 +1,4 @@
-/* Inmersión — misión, onboarding, footprint, transiciones, elev */
+/* Inmersión — misión, onboarding, footprint, Kp, elev, TLE age, lock-on */
 
 .st-app.is-mission .st-sidebar,
 .st-app.is-mission .st-right,
@@ -7,13 +7,9 @@
   display: none !important;
 }
 .st-app.is-mission .st-header,
-.st-app:fullscreen .st-header {
-  opacity: 0.85;
-}
+.st-app:fullscreen .st-header { opacity: 0.85; }
 .st-app.is-mission .st-dock,
-.st-app:fullscreen .st-dock {
-  opacity: 0.9;
-}
+.st-app:fullscreen .st-dock { opacity: 0.9; }
 
 .st-mission-telemetry {
   position: absolute;
@@ -45,17 +41,11 @@
   text-overflow: ellipsis;
 }
 
-.st-map-area {
-  transition: opacity 0.4s ease;
-}
-.st-map-area.is-view-switching {
-  opacity: 0.35;
-}
+.st-map-area { transition: opacity 0.4s ease; }
+.st-map-area.is-view-switching { opacity: 0.35; }
 
 .st-footprint,
-.st-foot-ring {
-  animation: st-foot-breathe 4s ease-in-out infinite;
-}
+.st-foot-ring { animation: st-foot-breathe 4s ease-in-out infinite; }
 @keyframes st-foot-breathe {
   0%, 100% { opacity: 0.55; }
   50% { opacity: 0.95; }
@@ -84,31 +74,17 @@
   padding-bottom: calc(1.25rem + env(safe-area-inset-bottom, 0px));
   background: rgba(0, 0, 0, 0.45);
 }
-.st-onboarding-card {
-  width: min(24rem, 100%);
-  padding: 1rem 1.15rem;
-}
+.st-onboarding-card { width: min(24rem, 100%); padding: 1rem 1.15rem; }
 .st-onboarding-step {
   font-family: var(--font-mono, monospace);
   font-size: 10px;
   opacity: 0.6;
   margin-bottom: 0.35rem;
 }
-.st-onboarding-text {
-  margin: 0 0 0.85rem;
-  line-height: 1.4;
-  font-size: 0.95rem;
-}
-.st-onboarding-actions {
-  display: flex;
-  gap: 0.5rem;
-  justify-content: flex-end;
-}
+.st-onboarding-text { margin: 0 0 0.85rem; line-height: 1.4; font-size: 0.95rem; }
+.st-onboarding-actions { display: flex; gap: 0.5rem; justify-content: flex-end; }
 
-.st-elev-max {
-  background: none !important;
-  border: none !important;
-}
+.st-elev-max { background: none !important; border: none !important; }
 .st-elev-max-label {
   display: inline-block;
   padding: 2px 6px;
@@ -120,4 +96,32 @@
   border-radius: 3px;
   white-space: nowrap;
   pointer-events: none;
+}
+
+/* Fase 3 — edad TLE + lock-on */
+.st-tle-fresh .st-ico svg { filter: drop-shadow(0 0 4px rgba(34, 211, 238, 0.55)); }
+.st-tle-aging .st-ico svg { opacity: 0.92; filter: drop-shadow(0 0 3px rgba(255, 103, 0, 0.35)); }
+.st-tle-stale .st-ico svg { opacity: 0.55; filter: grayscale(0.35); }
+.st-tle-aging.st-dom-icon { animation: st-tle-pulse 2.8s ease-in-out infinite; }
+@keyframes st-tle-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.72; }
+}
+.st-lock-on::after {
+  content: "";
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  border: 2px solid rgba(255, 103, 0, 0.35);
+  box-shadow: inset 0 0 40px rgba(255, 103, 0, 0.12);
+  animation: st-lock-flash 1.2s ease-out forwards;
+  z-index: 500;
+}
+@keyframes st-lock-flash {
+  0% { opacity: 0.9; }
+  100% { opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .st-tle-aging.st-dom-icon { animation: none; }
+  .st-lock-on::after { animation: none; opacity: 0; }
 }
