@@ -66,7 +66,7 @@ export const BASE_LAYERS: BaseLayerSpec[] = [
   },
 ];
 
-export const DEFAULT_BASE_ID = "esri-sat";
+export const DEFAULT_BASE_ID = "esri-dark"; // "capa por defecto oscura" (contrato scripts/map-tiles.test.mjs)
 
 /**
  * Capas superpuestas conmutables desde el mismo control (checkbox):
