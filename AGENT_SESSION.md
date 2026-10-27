@@ -39,3 +39,18 @@ node --test scripts/aosWatch.test.mjs scripts/interpolateFix.test.mjs
 
 ## Restricciones
 Sin plugins Capacitor nuevos sin permiso · no romper ortho/TLE · no ~/SpaceTracker*
+
+## 2026-10-27 — Reparación de 7 tests de rama limpia (post-TAREA 3)
+
+Tras el pull a `de44973`, la suite dejaba 7 tests rojos EN RAMA LIMPIA (no eran mezclas locales). Diagnóstico y fixes (5 commits atómicos):
+
+| Test(s) | Causa raíz | Fix
+|---|---|---|
+| live-catalog-epoch, orbit-passes | fixtures del 18-oct envejecieron (>3 d de umbral fresh) | `scripts/fixtures.mjs` regenerado vía API de Ivan (14 TLEs, épocas 25-26 oct); los que Ivan sirve con época vieja se conservan
+| ui-smoke ×2 | `a0c14c8` recortó SatDetail perdiendo az/el, pases, CSV, TLE y aviso de observador | restaurada la instrumentación de `af211eb` fusionada con modo Luna + geocodificación
+| map-tiles | `DEFAULT_BASE_ID` era `esri-sat`; el contrato exige `esri-dark` | 1 línea en `src/lib/ui/tiles.ts`
+| map-css (Glow FX) | box-shadow de `.hud-panel` sin el acento naranja | capa `0 0 24px -6px rgba(255,103,0,0.4)` en `styles.css`
+| map-css (rotación) | faltaba el comentario de garantía `SIN rotación perpetua` | comentario en `GlobeView.tsx` (el comportamiento ya era correcto)
+
+Nota operativa: `scripts/fixtures.mjs` ENVEJECE (fresh ≤ 3 d); regenerarlo periódicamente con TLEs de Ivan para que live-catalog-epoch (exige 8 frescos) y orbit-passes (ISS < 5 d) no vuelvan a fallar.
+Verificación: spot-check post-push OK (5/5 archivos); queda pendiente `npm run typecheck && npm test` en local.
