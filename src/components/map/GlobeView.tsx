@@ -1,5 +1,8 @@
 /**
  * GlobeView — globo terráqueo en PROYECCIÓN ORTOGRÁFICA 2D con respiración canvas y alto rendimiento.
+ *
+ * Garantía SIN rotación perpetua: el globo está ESTÁTICO por defecto; el giro
+ * es explícito (botón «Girar») y el centrado solo ocurre con lock de seguimiento.
  */
 import { useEffect, useRef, useState } from "react";
 import { geoGraticule10, geoOrthographic, geoPath } from "../../vendor/d3-geo/index.js";
