@@ -7,6 +7,7 @@ import "./styles-responsive-task3.css";
 import "./styles-responsive-task5.css";
 import "./styles-immersion.css";
 import "./styles-neon-poster.css";
+import "./styles-map-motion.css";
 import App from "./App";
 import { installAndroidChrome } from "./lib/ui/androidChrome";
 
