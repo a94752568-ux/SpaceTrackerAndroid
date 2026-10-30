@@ -147,7 +147,8 @@ export default function GlobeView({
         viewRef.current.scale = Math.min(w, h) * 0.42;
       }
       cacheKey = "";
-    };n
+    };
+
     const ro = new ResizeObserver(() => {
       cancelAnimationFrame(resizeRaf);
       resizeRaf = requestAnimationFrame(resize);
