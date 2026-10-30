@@ -1,7 +1,7 @@
 /* ==========================================================================
    SpaceTracker — Poster Neon Cyberpunk (Image 2 target)
-   Override layer: tokens, trails, grid, vignette, stronger HUD glow.
-   Import after styles.css. Does not replace the Mission Control architecture.
+   Override layer: tokens, trails, grid, vignette, glitch, map readability.
+   Import after styles.css.
    ========================================================================== */
 
 :root,
@@ -26,7 +26,7 @@
   --accent-glow-strong: rgba(0, 245, 255, 0.85);
   --cyan: #00f5ff;
   --yellow: #ffd60a;
-  --pink: #a020f0;
+  --pink: #ff2daa;
   --red: #ff3b5c;
   --ok: #00f5ff;
   --warn: #ff6a00;
@@ -38,20 +38,20 @@
   --group-crew: #ffd60a;
   --group-weather: #00f5ff;
   --group-nav: #8fff00;
-  --group-science: #a020f0;
-  --group-starlink: #00f5ff;
+  --group-science: #c77dff;
+  --group-starlink: #5ee7ff;
   --group-comms: #ff6a00;
-  --group-other: #7ec8d8;
+  --group-other: #94a3b8;
 }
 
 .st-app {
   position: relative;
   background:
-    radial-gradient(1200px 500px at 50% -15%, rgba(0, 245, 255, 0.07), transparent 70%),
+    radial-gradient(1200px 500px at 50% -15%, rgba(0, 245, 255, 0.06), transparent 70%),
     var(--bg);
 }
 
-/* Subtle HUD grid */
+/* HUD grid — very subtle so it does not wash the map */
 .st-app::before {
   content: "";
   position: absolute;
@@ -59,20 +59,20 @@
   pointer-events: none;
   z-index: 0;
   background-image:
-    linear-gradient(rgba(0, 245, 255, 0.04) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(0, 245, 255, 0.04) 1px, transparent 1px);
+    linear-gradient(rgba(0, 245, 255, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 245, 255, 0.03) 1px, transparent 1px);
   background-size: 100px 100px;
-  opacity: 0.55;
+  opacity: 0.35;
 }
 
-/* Soft vignette */
+/* Soft vignette — keep map center readable */
 .st-app::after {
   content: "";
   position: absolute;
   inset: 0;
   pointer-events: none;
   z-index: 0;
-  background: radial-gradient(ellipse at center, transparent 45%, rgba(0, 4, 10, 0.65) 100%);
+  background: radial-gradient(ellipse at center, transparent 55%, rgba(0, 4, 10, 0.45) 100%);
 }
 
 .st-header {
@@ -87,41 +87,68 @@
   background-color: #020c14 !important;
 }
 
+/* MAP READABILITY: continents stay visible in dark mode */
 .leaflet-tile-pane {
-  filter: brightness(0.55) contrast(1.35) saturate(0.55) hue-rotate(-8deg);
+  filter: brightness(0.82) contrast(1.12) saturate(0.75) !important;
 }
 
-/* Neon motion trails on markers */
+/* Canvas fleet glow */
+.leaflet-overlay-pane canvas {
+  filter:
+    drop-shadow(0 0 4px rgba(0, 245, 255, 0.45))
+    drop-shadow(0 0 10px rgba(0, 245, 255, 0.2)) !important;
+}
+
+/* ---------- Satellite visual quality ---------- */
 .st-trail {
   position: absolute;
   top: 50%;
   left: 50%;
-  width: 72px;
+  width: 64px;
   height: 2px;
   background: linear-gradient(90deg, transparent 0%, var(--g, var(--cyan)) 100%);
   transform-origin: left center;
   transform: translateY(-50%) rotate(var(--rot, -25deg));
-  filter: blur(1.2px);
-  opacity: 0.75;
+  filter: blur(1px);
+  opacity: 0.7;
   pointer-events: none;
   z-index: -1;
 }
 
 .st-tac {
-  filter: drop-shadow(0 0 6px var(--g-glow, rgba(0, 245, 255, 0.45)));
+  filter: drop-shadow(0 0 8px var(--g-glow, rgba(0, 245, 255, 0.5)));
 }
 
 .st-tac-ring {
   box-shadow:
-    0 0 10px var(--g, var(--cyan)),
-    0 0 20px var(--g-glow, rgba(0, 245, 255, 0.3));
+    0 0 8px var(--g, var(--cyan)),
+    0 0 16px var(--g-glow, rgba(0, 245, 255, 0.35));
+  animation: st-ring-breathe 2.8s ease-in-out infinite;
+}
+
+@keyframes st-ring-breathe {
+  0%, 100% { opacity: 0.85; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.08); }
+}
+
+.st-ico svg {
+  filter:
+    drop-shadow(0 0 6px rgba(0, 245, 255, 0.85))
+    drop-shadow(0 0 14px rgba(0, 245, 255, 0.35)) !important;
+}
+
+.st-sat-icon .st-ico svg {
+  filter:
+    drop-shadow(0 0 6px rgba(255, 103, 0, 0.95))
+    drop-shadow(0 0 16px rgba(255, 103, 0, 0.5)) !important;
+  animation: st-glow-pulse 2.4s ease-in-out infinite;
 }
 
 .selected-satellite-active .st-halo {
   background: radial-gradient(
     circle,
-    rgba(0, 245, 255, 0.42) 0%,
-    rgba(0, 245, 255, 0.14) 45%,
+    rgba(0, 245, 255, 0.5) 0%,
+    rgba(0, 245, 255, 0.18) 40%,
     rgba(0, 245, 255, 0) 72%
   );
 }
@@ -136,4 +163,126 @@
   color: var(--ok);
   border: 1px solid rgba(0, 245, 255, 0.45);
   box-shadow: 0 0 10px rgba(0, 245, 255, 0.25);
+}
+
+/* ---------- Improved GLITCH effect ---------- */
+@keyframes glitch-slice {
+  0% {
+    transform: translate(0, 0) skewX(0);
+    filter: none;
+  }
+  10% {
+    transform: translate(-4px, 1px) skewX(-2deg);
+    filter:
+      drop-shadow(3px 0 #ff2daa)
+      drop-shadow(-3px 0 #00f5ff)
+      contrast(1.4);
+  }
+  20% {
+    transform: translate(3px, -2px) skewX(1deg);
+    filter: hue-rotate(40deg) contrast(1.6) saturate(1.8);
+  }
+  30% {
+    transform: translate(-2px, 2px);
+    filter:
+      drop-shadow(-4px 0 #ffd60a)
+      drop-shadow(4px 0 #ff3b5c);
+  }
+  40% {
+    transform: translate(5px, 0) skewX(-1deg);
+    filter: invert(0.08) hue-rotate(-30deg);
+  }
+  50% {
+    transform: translate(-5px, -1px);
+    filter:
+      drop-shadow(2px 0 #00f5ff)
+      drop-shadow(-2px 0 #ff2daa)
+      brightness(1.15);
+  }
+  60% {
+    transform: translate(2px, 3px) skewX(2deg);
+    filter: hue-rotate(90deg) contrast(1.5);
+  }
+  70% {
+    transform: translate(-3px, -2px);
+    filter:
+      drop-shadow(5px 0 #a020f0)
+      drop-shadow(-5px 0 #00f5ff);
+  }
+  80% {
+    transform: translate(4px, 1px);
+    filter: saturate(2) brightness(1.1);
+  }
+  90% {
+    transform: translate(-1px, 2px) skewX(-1deg);
+    filter:
+      drop-shadow(-2px 0 #ff2daa)
+      drop-shadow(2px 0 #00f5ff);
+  }
+  100% {
+    transform: translate(0, 0) skewX(0);
+    filter: none;
+  }
+}
+
+@keyframes glitch-scan {
+  0%, 100% { opacity: 0; transform: translateY(-100%); }
+  40% { opacity: 0.35; }
+  50% { opacity: 0.55; transform: translateY(0%); }
+  60% { opacity: 0.25; }
+  80% { opacity: 0; transform: translateY(100%); }
+}
+
+.glitch-effect {
+  animation: glitch-slice 0.55s infinite steps(2, end);
+  position: relative;
+}
+
+.glitch-effect::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 9999;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0, 245, 255, 0.04) 2px,
+    rgba(0, 245, 255, 0.04) 4px
+  );
+  mix-blend-mode: screen;
+  animation: glitch-scan 1.2s linear infinite;
+}
+
+.glitch-effect::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 9998;
+  background:
+    linear-gradient(90deg, rgba(255, 45, 170, 0.06), transparent 40%, rgba(0, 245, 255, 0.06));
+  mix-blend-mode: color-dodge;
+}
+
+/* Satellites-only glitch (overlay pane + marker DOM) */
+.glitch-satellites {
+  animation: glitch-slice 0.45s infinite steps(2, end) !important;
+}
+
+.glitch-satellites .st-ico,
+.glitch-satellites .st-tac,
+.glitch-satellites .st-sat-icon {
+  animation: glitch-slice 0.35s infinite steps(1, end);
+}
+
+/* Glitch button ON state */
+.st-glitch-btn.on {
+  background: var(--pink) !important;
+  color: #050505 !important;
+  box-shadow:
+    0 0 16px rgba(255, 45, 170, 0.85),
+    0 0 32px rgba(0, 245, 255, 0.35) !important;
+  animation: glitch-slice 0.8s infinite steps(2, end);
 }
