@@ -6,7 +6,7 @@ import { memo, useState } from "react";
 
 import type { CatalogPayload, Observer } from "../lib/space/types";
 import { AGING_MAX_DAYS } from "../lib/space/tle-epoch";
-import { fmtDateTime } from "../lib/ui/format";
+import { fmtDateTime, fmtPosterDate, fmtPosterTime } from "../lib/ui/format";
 import { isTauri } from "../lib/ui/native";
 import WindowControls from "./hud/WindowControls";
 
@@ -221,9 +221,12 @@ function Header({
           <span className={`st-badge ${payload.source === "live" ? "st-badge-live" : "st-badge-seed"}`}>
             {payload.source === "live" ? "LIVE" : "SEED"}
           </span>
-          <span className="st-prov-meta ellipsis">
-            {uniqueCount} visibles · {fmtDateTime(payload.fetchedAt)} UTC ▾
-          </span>
+          <span className="st-live-dot" aria-hidden="true" />
+          <span className="st-poster-count">{uniqueCount}</span>
+          <span className="st-poster-label">visibles</span>
+          <span className="st-prov-meta st-poster-date">{fmtPosterDate(payload.fetchedAt)}</span>
+          <span className="st-prov-meta st-poster-time">{fmtPosterTime(payload.fetchedAt)} UTC</span>
+          <span className="st-poster-caret" aria-hidden="true">▾</span>
         </div>
       )}
 

@@ -115,3 +115,102 @@
   box-shadow: 0 0 16px rgba(255, 45, 170, 0.85), 0 0 32px rgba(0, 245, 255, 0.35) !important;
   animation: glitch-slice 0.8s infinite steps(2, end);
 }
+
+/* ==========================================================================
+   Póster (Image 2) — marca, chip VISIBLES y nav inferior compactos
+   ========================================================================== */
+
+/* Marca estilo póster: SPACETRACKER */
+.st-brand h1 {
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  font-weight: 800;
+  text-shadow:
+    0 0 6px rgba(0, 245, 255, 0.9),
+    0 0 18px rgba(0, 245, 255, 0.55),
+    0 0 42px rgba(0, 245, 255, 0.25);
+}
+.st-brand .st-tagline {
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 0.66em;
+}
+
+/* Punto LIVE pulsante (indicador del póster) */
+.st-live-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--ok);
+  box-shadow: 0 0 6px var(--ok), 0 0 14px rgba(0, 245, 255, 0.5);
+  animation: st-live-pulse 1.6s ease-in-out infinite;
+}
+@keyframes st-live-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.4; transform: scale(0.75); }
+}
+
+/* Meta compacta estilo póster: ● 182 VISIBLES · 30 OCT 2026 · 08:14 UTC ▾ */
+.st-compact-meta {
+  gap: 0.45rem;
+  align-items: center;
+  line-height: 1;
+}
+.st-poster-count {
+  font-size: 1.12em;
+  font-weight: 800;
+  color: var(--cyan);
+  font-variant-numeric: tabular-nums;
+  text-shadow: 0 0 10px rgba(0, 245, 255, 0.75);
+}
+.st-poster-label,
+.st-poster-date,
+.st-poster-time {
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 0.72em;
+  font-weight: 600;
+}
+.st-poster-label { color: var(--text); }
+.st-poster-date { color: var(--muted); }
+.st-poster-time {
+  color: var(--yellow);
+  text-shadow: 0 0 8px rgba(255, 214, 10, 0.4);
+}
+.st-poster-caret {
+  color: var(--cyan);
+  font-size: 0.7em;
+  text-shadow: 0 0 8px rgba(0, 245, 255, 0.6);
+}
+
+/* Nav inferior compacto: CATÁLOGO · RADAR · TIEMPO · CAPAS con neón */
+.st-bottom-nav {
+  background: rgba(2, 12, 20, 0.94) !important;
+  backdrop-filter: blur(10px);
+  border-top: 1px solid rgba(0, 245, 255, 0.35);
+  box-shadow: 0 -10px 28px rgba(0, 245, 255, 0.16), inset 0 1px 0 rgba(0, 245, 255, 0.2);
+}
+.st-bottom-nav button {
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  font-weight: 600;
+  color: var(--muted);
+  transition: color 0.18s ease, text-shadow 0.18s ease;
+}
+.st-bottom-nav button span {
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+.st-bottom-nav button:hover { color: var(--cyan); }
+.st-bottom-nav button.active,
+.st-bottom-nav button[aria-current="page"],
+.st-bottom-nav button[aria-current="true"] {
+  color: var(--cyan);
+  text-shadow: 0 0 12px rgba(0, 245, 255, 0.85);
+}
+.st-bottom-nav button.active span,
+.st-bottom-nav button[aria-current="page"] span,
+.st-bottom-nav button[aria-current="true"] span {
+  color: inherit;
+}
