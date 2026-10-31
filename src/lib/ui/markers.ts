@@ -12,6 +12,7 @@
  *   SGP4 entre t y t+1 s (ver `bearingDeg` en lib/space/propagate.ts).
  * - El satélite seleccionado lleva la clase `.selected-satellite-active`
  *   (anillos de pulso vía ::before/::after en styles.css).
+ * - Estelas neon (.st-trail) para el look poster cyberpunk (Image 2).
  */
 
 import type { GroupId } from "../space/types";
@@ -53,10 +54,10 @@ const ICON_PATHS: Record<GroupId, string> = {
     '<circle cx="8" cy="8" r="3.2"/><path d="M8 1.6v2.2M8 12.2v2.2M1.6 8h2.2M12.2 8h2.2"/><circle cx="8" cy="8" r="1" fill="COLOR" stroke="none"/>',
   // Átomo (núcleo + dos órbitas)
   science:
-    '<circle cx="8" cy="8" r="1.1" fill="COLOR" stroke="none"/><ellipse cx="8" cy="8" rx="6.2" ry="2.5"/><ellipse cx="8" cy="8" rx="6.2" ry="2.5" transform="rotate(64 8 8)"/>',
-  // Panel plano característico de Starlink + cuerpo
+    '<circle cx="8" cy="8" r="1.1" fill="COLOR" stroke="none"/><ellipse cx="8" cy="8" rx="5.5" ry="2.2" transform="rotate(30 8 8)"/><ellipse cx="8" cy="8" rx="5.5" ry="2.2" transform="rotate(-30 8 8)"/>',
+  // Constelación / red de nodos
   starlink:
-    '<rect x="2.4" y="7.1" width="11.2" height="1.8" rx=".5"/><rect x="6.7" y="4.2" width="2.6" height="2.9" rx=".5"/><path d="M8 8.9v2.6"/>',
+    '<circle cx="5" cy="5" r="1.2"/><circle cx="11" cy="5" r="1.2"/><circle cx="8" cy="11" r="1.2"/><path d="M5 5l3 6M11 5l-3 6M5 5h6"/>',
   // Antena parabólica con haz
   comms:
     '<path d="M3.6 9.8a5.2 5.2 0 0 1 6.6-6.6z"/><path d="M7 6.4l4.6 4.6"/><path d="M11.9 2.7a4.6 4.6 0 0 1 1.4 1.4"/><path d="M6.4 11.4l-1.6 2.8"/>',
@@ -77,16 +78,18 @@ export function groupIconSvg(group: GroupId, color: string): string {
 /**
  * Interior del divIcon del tier DOM (favoritos / categoría activa):
  * puntero táctico = anillo radar-ping escalonado + icono SVG orientable +
- * badge ★ de favorito + etiqueta inteligente de nombre.
+ * badge ★ de favorito + etiqueta inteligente de nombre + estela neon.
  */
 export function tacticalIconHtml(
   group: GroupId,
   color: string,
-  opts: { fav?: boolean; ping?: string; label?: string } = {},
+  opts: { fav?: boolean; ping?: string; label?: string; rot?: number } = {},
 ): string {
   const ping = opts.ping ?? "0s";
+  const rot = opts.rot ?? -25;
   return (
-    `<span class="st-tac" style="--g:${color};--g-glow:${color}66;--pd:${ping}">` +
+    `<span class="st-tac" style="--g:${color};--g-glow:${color}66;--pd:${ping};--rot:${rot}deg">` +
+    `<span class="st-trail" aria-hidden="true"></span>` +
     `<span class="st-tac-ring"></span>` +
     `<span class="st-ico">${groupIconSvg(group, color)}</span>` +
     `${opts.fav ? '<span class="st-fav-badge" aria-label="favorito">★</span>' : ""}` +
@@ -97,10 +100,11 @@ export function tacticalIconHtml(
 
 /**
  * Interior del divIcon del satélite seleccionado: icono grande orientable +
- * retícula giratoria + crosshair biselado con destellos naranjas.
+ * retícula giratoria + crosshair biselado + estela neon.
  */
 export function satIconHtml(group: GroupId, color: string): string {
   return (
+    `<span class="st-trail" style="--g:${color};--rot:-28deg" aria-hidden="true"></span>` +
     `<span class="st-ico st-ico-lg">${groupIconSvg(group, color)}</span>` +
     '<span class="st-halo"></span>' +
     '<span class="st-reticle"></span>' +

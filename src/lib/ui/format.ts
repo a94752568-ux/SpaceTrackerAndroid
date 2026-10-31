@@ -65,3 +65,38 @@ export function fmtAz(az: number): string {
   const d = dirs[Math.round(((az % 360) + 360) % 360 / 22.5) % 16];
   return `${fmtNum(az, 0)}° (${d})`;
 }
+
+/** Fecha estilo póster: "30 OCT 2026" (mayúsculas; UTC por defecto). */
+export function fmtPosterDate(ms: number | string | Date, timezone?: string): string {
+  const d = typeof ms === "string" ? new Date(ms) : typeof ms === "number" ? new Date(ms) : ms;
+  try {
+    return new Intl.DateTimeFormat("es-ES", {
+      timeZone: timezone ?? "UTC",
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    })
+      .format(d)
+      .replace(/\./g, "")
+      .replace(/\s*de\s+/gi, " ")
+      .trim()
+      .toUpperCase();
+  } catch {
+    return d.toISOString().slice(0, 10);
+  }
+}
+
+/** Hora estilo póster: "08:14" (sin segundos; UTC por defecto). */
+export function fmtPosterTime(ms: number | string | Date, timezone?: string): string {
+  const d = typeof ms === "string" ? new Date(ms) : typeof ms === "number" ? new Date(ms) : ms;
+  try {
+    return new Intl.DateTimeFormat("es-ES", {
+      timeZone: timezone ?? "UTC",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false,
+    }).format(d);
+  } catch {
+    return d.toISOString().slice(11, 16);
+  }
+}

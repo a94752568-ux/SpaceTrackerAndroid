@@ -254,14 +254,15 @@ export default function MapView({
       });
     }
     termRef.current = L.polygon([], {
-      color: "#22d3ee",
-      weight: 1,
-      opacity: 0.5,
-      dashArray: "4 4",
-      fillColor: "#000000",
-      fillOpacity: 0.38,
+      color: "#00f5ff",
+      weight: 1.2,
+      opacity: 0.55,
+      dashArray: "5 6",
+      fillColor: "#020814",
+      fillOpacity: 0.22,
       interactive: false,
       bubblingMouseEvents: false,
+      className: "st-terminator",
     });
     map.on("dragstart", () => onUserPanRef.current?.());
     
@@ -392,8 +393,8 @@ export default function MapView({
         domElsRef.current.delete(s.id);
         if (!hasCm && seen.has(s.id)) {
           const cm = L.circleMarker([0, 0], {
-            radius: 2,
-            weight: 1,
+            radius: 2.8,
+            weight: 1.25,
             color: GROUP_COLORS[s.group],
             fillColor: GROUP_COLORS[s.group],
             ...FLEET_OFF,
@@ -414,8 +415,8 @@ export default function MapView({
         }
       } else if (!wantDom && !hasCm) {
         const cm = L.circleMarker([0, 0], {
-          radius: 2,
-          weight: 1,
+          radius: 2.8,
+          weight: 1.25,
           color: GROUP_COLORS[s.group],
           fillColor: GROUP_COLORS[s.group],
           ...FLEET_OFF,
@@ -621,7 +622,7 @@ export default function MapView({
       if (isGlitching) {
         overlayPane.classList.add("glitch-satellites");
         overlayPane.style.filter =
-          "hue-rotate(90deg) contrast(180%) drop-shadow(2px 0px 0px #FF2DAA) drop-shadow(-2px 0px 0px #00E5FF)";
+          "contrast(1.35) saturate(1.45) drop-shadow(3px 0 0 #FF2DAA) drop-shadow(-3px 0 0 #00F5FF)";
       } else {
         overlayPane.classList.remove("glitch-satellites");
         overlayPane.style.filter = "";
@@ -710,16 +711,18 @@ export default function MapView({
     const segMid = splitAntimeridian([back.slice(half).map((f) => [f.latDeg, f.lonDeg] as [number, number])]);
     const segFut = splitAntimeridian([fwd.map((f) => [f.latDeg, f.lonDeg] as [number, number])]);
     const trackOpts = {
-      color: "#22d3ee",
-      weight: 1.6,
-      interactive: false,          // capa de soporte: nunca intercepta clics
-      bubblingMouseEvents: false,  // ni propaga eventos al mapa
+      color: "#00f5ff",
+      weight: 1.8,
+      interactive: false,
+      bubblingMouseEvents: false,
+      lineCap: "round" as const,
+      lineJoin: "round" as const,
     } as L.PolylineOptions;
-    // Órbita estilizada: fade de opacidad hacia el pasado (3 trazos SVG).
+    // Órbita estilizada: fade hacia el pasado + dash animado en el futuro.
     if (!trackOldRef.current) {
-      trackOldRef.current = L.polyline(segOld, { ...trackOpts, opacity: 0.12, className: "st-track-old" }).addTo(map);
-      trackMidRef.current = L.polyline(segMid, { ...trackOpts, opacity: 0.28, className: "st-track-mid" }).addTo(map);
-      trackFutRef.current = L.polyline(segFut, { ...trackOpts, opacity: 0.55, className: "st-track-fut" }).addTo(map);
+      trackOldRef.current = L.polyline(segOld, { ...trackOpts, opacity: 0.14, className: "st-track-old" }).addTo(map);
+      trackMidRef.current = L.polyline(segMid, { ...trackOpts, opacity: 0.32, className: "st-track-mid" }).addTo(map);
+      trackFutRef.current = L.polyline(segFut, { ...trackOpts, opacity: 0.7, weight: 2.2, dashArray: "10 8", className: "st-track-fut" }).addTo(map);
     } else {
       trackOldRef.current.setLatLngs(segOld);
       trackMidRef.current?.setLatLngs(segMid);
@@ -775,10 +778,10 @@ export default function MapView({
     }
 
     if (isNewSelection) {
-      map.flyTo([fix.latDeg, fix.lonDeg], Math.max(map.getZoom(), 4), { duration: 1.25 });
+      map.flyTo([fix.latDeg, fix.lonDeg], Math.max(map.getZoom(), 4), { duration: 1.6, easeLinearity: 0.35 });
       flyUntilRef.current = Date.now() + 1400;
     } else if (tracked && Date.now() > flyUntilRef.current) {
-      map.panTo([fix.latDeg, fix.lonDeg], { animate: true, duration: 0.9, easeLinearity: 0.9 });
+      map.panTo([fix.latDeg, fix.lonDeg], { animate: true, duration: 1.15, easeLinearity: 0.45 });
     }
     };
 

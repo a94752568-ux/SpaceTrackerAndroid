@@ -153,8 +153,20 @@ export function SkyRadar({ sat, observer, now }: SkyRadarProps) {
         <text x={CX + 4} y={CY - (R * 2) / 3 + 10} className="st-radar-el">30°</text>
         <text x={CX + 4} y={CY - R / 3 + 10} className="st-radar-el">60°</text>
         <text x={CX + 4} y={CY - 2} className="st-radar-el">90°</text>
-        {/* barrido decorativo */}
+        {/* barrido decorativo con estela (líneas retardadas tras el haz) */}
         <g className="st-radar-sweep">
+          {[8, 16, 24, 32, 40, 48].map((deg, i) => (
+            <line
+              key={deg}
+              x1={CX}
+              y1={CY}
+              x2={CX}
+              y2={CY - R}
+              className="st-radar-sweep-trail"
+              transform={`rotate(${-deg} ${CX} ${CY})`}
+              opacity={0.4 - i * 0.05}
+            />
+          ))}
           <line x1={CX} y1={CY} x2={CX} y2={CY - R} />
         </g>
         {/* trayectoria del pase: pasado sólido, futuro discontinuo */}

@@ -1,0 +1,258 @@
+/* SpaceTracker — Poster Neon (Image 2) */
+:root, [data-theme="neon"] {
+  --bg: #020c14;
+  --bg-app: var(--bg);
+  --bg-panel: rgba(2, 12, 20, 0.92);
+  --surface-panel: var(--bg-panel);
+  --bg-raise: #061018;
+  --bg-card: #040e16;
+  --bg-input: #020a10;
+  --line: #00f5ff;
+  --border-hud: var(--line);
+  --line-soft: #0a2030;
+  --text: #e8fbff;
+  --muted: #7ec8d8;
+  --text-muted: var(--muted);
+  --accent: #00f5ff;
+  --color-primary: var(--accent);
+  --accent-soft: #ffd60a;
+  --accent-glow: rgba(0, 245, 255, 0.55);
+  --accent-glow-strong: rgba(0, 245, 255, 0.85);
+  --cyan: #00f5ff;
+  --yellow: #ffd60a;
+  --pink: #ff2daa;
+  --red: #ff3b5c;
+  --ok: #00f5ff;
+  --warn: #ff6a00;
+  --bad: #ff3b5c;
+  --group-crew: #ffd60a;
+  --group-weather: #00f5ff;
+  --group-nav: #8fff00;
+  --group-science: #c77dff;
+  --group-starlink: #5ee7ff;
+  --group-comms: #ff6a00;
+  --group-other: #94a3b8;
+}
+.st-app {
+  position: relative;
+  background: radial-gradient(1200px 500px at 50% -15%, rgba(0, 245, 255, 0.06), transparent 70%), var(--bg);
+}
+.st-app::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background-image: linear-gradient(rgba(0, 245, 255, 0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(0, 245, 255, 0.03) 1px, transparent 1px);
+  background-size: 100px 100px;
+  opacity: 0.35;
+}
+.st-app::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background: radial-gradient(ellipse at center, transparent 55%, rgba(0, 4, 10, 0.45) 100%);
+}
+.st-header {
+  background: rgba(2, 12, 20, 0.88) !important;
+  backdrop-filter: blur(12px) !important;
+  box-shadow: 0 0 24px rgba(0, 245, 255, 0.18), inset 0 -1px 0 rgba(0, 245, 255, 0.25);
+}
+.leaflet-container { background-color: #020c14 !important; }
+.leaflet-tile-pane {
+  filter: brightness(0.82) contrast(1.12) saturate(0.75) !important;
+}
+.leaflet-overlay-pane canvas {
+  filter: drop-shadow(0 0 4px rgba(0, 245, 255, 0.45)) drop-shadow(0 0 10px rgba(0, 245, 255, 0.2)) !important;
+}
+.st-trail {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 64px;
+  height: 2px;
+  background: linear-gradient(90deg, transparent 0%, var(--g, var(--cyan)) 100%);
+  transform-origin: left center;
+  transform: translateY(-50%) rotate(var(--rot, -25deg));
+  filter: blur(1px);
+  opacity: 0.7;
+  pointer-events: none;
+  z-index: -1;
+}
+.st-tac { filter: drop-shadow(0 0 8px var(--g-glow, rgba(0, 245, 255, 0.5))); }
+.st-tac-ring {
+  box-shadow: 0 0 8px var(--g, var(--cyan)), 0 0 16px var(--g-glow, rgba(0, 245, 255, 0.35));
+}
+.st-ico svg {
+  filter: drop-shadow(0 0 6px rgba(0, 245, 255, 0.85)) drop-shadow(0 0 14px rgba(0, 245, 255, 0.35)) !important;
+}
+.st-sat-icon .st-ico svg {
+  filter: drop-shadow(0 0 6px rgba(255, 103, 0, 0.95)) drop-shadow(0 0 16px rgba(255, 103, 0, 0.5)) !important;
+  animation: st-glow-pulse 2.4s ease-in-out infinite;
+}
+.st-brand h1 { text-shadow: 0 0 12px rgba(0, 245, 255, 0.35); }
+.st-badge-live {
+  background: rgba(0, 245, 255, 0.12);
+  color: var(--ok);
+  border: 1px solid rgba(0, 245, 255, 0.45);
+  box-shadow: 0 0 10px rgba(0, 245, 255, 0.25);
+}
+@keyframes glitch-slice {
+  0% { transform: translate(0, 0) skewX(0); filter: none; }
+  15% { transform: translate(-4px, 1px) skewX(-2deg); filter: drop-shadow(3px 0 #ff2daa) drop-shadow(-3px 0 #00f5ff) contrast(1.4); }
+  35% { transform: translate(3px, -2px); filter: hue-rotate(40deg) contrast(1.5) saturate(1.6); }
+  55% { transform: translate(-3px, 2px); filter: drop-shadow(-4px 0 #ffd60a) drop-shadow(4px 0 #ff3b5c); }
+  75% { transform: translate(4px, 1px); filter: drop-shadow(2px 0 #00f5ff) drop-shadow(-2px 0 #ff2daa); }
+  100% { transform: translate(0, 0); filter: none; }
+}
+.glitch-effect { animation: glitch-slice 0.55s infinite steps(2, end); position: relative; }
+.glitch-satellites { animation: glitch-slice 0.45s infinite steps(2, end) !important; }
+.st-glitch-btn.on {
+  background: var(--pink) !important;
+  color: #050505 !important;
+  box-shadow: 0 0 16px rgba(255, 45, 170, 0.85), 0 0 32px rgba(0, 245, 255, 0.35) !important;
+  animation: glitch-slice 0.8s infinite steps(2, end);
+}
+
+/* ==========================================================================
+   Póster (Image 2) — marca, chip VISIBLES y nav inferior compactos
+   ========================================================================== */
+
+/* Marca estilo póster: SPACETRACKER */
+.st-brand h1 {
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  font-weight: 800;
+  text-shadow:
+    0 0 6px rgba(0, 245, 255, 0.9),
+    0 0 18px rgba(0, 245, 255, 0.55),
+    0 0 42px rgba(0, 245, 255, 0.25);
+}
+.st-brand .st-tagline {
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 0.66em;
+}
+
+/* Punto LIVE pulsante (indicador del póster) */
+.st-live-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--ok);
+  box-shadow: 0 0 6px var(--ok), 0 0 14px rgba(0, 245, 255, 0.5);
+  animation: st-live-pulse 1.6s ease-in-out infinite;
+}
+@keyframes st-live-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.4; transform: scale(0.75); }
+}
+
+/* Meta compacta estilo póster: ● 182 VISIBLES · 30 OCT 2026 · 08:14 UTC ▾ */
+.st-compact-meta {
+  gap: 0.45rem;
+  align-items: center;
+  line-height: 1;
+}
+.st-poster-count {
+  font-size: 1.12em;
+  font-weight: 800;
+  color: var(--cyan);
+  font-variant-numeric: tabular-nums;
+  text-shadow: 0 0 10px rgba(0, 245, 255, 0.75);
+}
+.st-poster-label,
+.st-poster-date,
+.st-poster-time {
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 0.72em;
+  font-weight: 600;
+}
+.st-poster-label { color: var(--text); }
+.st-poster-date { color: var(--muted); }
+.st-poster-time {
+  color: var(--yellow);
+  text-shadow: 0 0 8px rgba(255, 214, 10, 0.4);
+}
+.st-poster-caret {
+  color: var(--cyan);
+  font-size: 0.7em;
+  text-shadow: 0 0 8px rgba(0, 245, 255, 0.6);
+}
+
+/* Nav inferior compacto: CATÁLOGO · RADAR · TIEMPO · CAPAS con neón */
+.st-bottom-nav {
+  background: rgba(2, 12, 20, 0.94) !important;
+  backdrop-filter: blur(10px);
+  border-top: 1px solid rgba(0, 245, 255, 0.35);
+  box-shadow: 0 -10px 28px rgba(0, 245, 255, 0.16), inset 0 1px 0 rgba(0, 245, 255, 0.2);
+}
+.st-bottom-nav button {
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  font-weight: 600;
+  color: var(--muted);
+  transition: color 0.18s ease, text-shadow 0.18s ease;
+}
+.st-bottom-nav button span {
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+.st-bottom-nav button:hover { color: var(--cyan); }
+.st-bottom-nav button.active,
+.st-bottom-nav button[aria-current="page"],
+.st-bottom-nav button[aria-current="true"] {
+  color: var(--cyan);
+  text-shadow: 0 0 12px rgba(0, 245, 255, 0.85);
+}
+.st-bottom-nav button.active span,
+.st-bottom-nav button[aria-current="page"] span,
+.st-bottom-nav button[aria-current="true"] span {
+  color: inherit;
+}
+
+/* ==========================================================================
+   Profundidad (Image 2) — paneles, radar de cielo y globo
+   ========================================================================== */
+
+/* Paneles flotantes: sombra profunda cian del póster */
+.st-app .hud-panel {
+  box-shadow:
+    0 20px 80px rgba(0, 245, 255, 0.3),
+    0 0 0 1px rgba(0, 245, 255, 0.16),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+/* Radar de cielo local: estela del barrido, scanlines CRT y blip pulsante */
+.st-radar-sweep-trail {
+  stroke: var(--cyan);
+  stroke-width: 1;
+  stroke-linecap: round;
+}
+.st-skyradar {
+  position: relative;
+}
+.st-skyradar::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 12px;
+  pointer-events: none;
+  background: repeating-linear-gradient(0deg, rgba(0, 245, 255, 0.045) 0 1px, transparent 1px 3px);
+}
+.st-radar-live-glow {
+  animation: st-radar-blip 1.6s ease-in-out infinite;
+}
+@keyframes st-radar-blip {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.35; }
+}
+
+/* Contenedor del globo: profundidad sutil */
+.st-globe-wrap {
+  box-shadow: 0 20px 80px rgba(0, 245, 255, 0.08);
+}
