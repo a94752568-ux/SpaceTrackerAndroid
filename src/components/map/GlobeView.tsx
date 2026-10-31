@@ -15,11 +15,10 @@ import landRaw from "../../vendor/land-110m.json?raw";
 import { FLEET_STRIDE, FLEET_UPDATE_MS } from "../../lib/space/fleet-compute";
 import { FleetClient, type FleetFrame } from "../../lib/space/fleet-worker-client";
 import { dragToRotation, orthoProject, wrapLonDeg, type OrthoView } from "../../lib/space/ortho";
-import { footprint, getFix, groundTrack } from "../../lib/space/propagate";
+import { getFix } from "../../lib/space/propagate";
 import { getMoonPosition } from "../../lib/space/moon-position";
-import type { Fix, Observer, Sat } from "../../lib/space/types";
+import type { Observer, Sat } from "../../lib/space/types";
 import { GROUP_COLORS } from "../../lib/ui/colors";
-import { escapeHtml } from "../../lib/ui/markers";
 
 interface GlobeViewProps {
   sats: Sat[];
@@ -81,24 +80,26 @@ export default function GlobeView({
 
   useEffect(() => {
     byIdRef.current = new Map(sats.map((s) => [s.id, s]));
+    if (!fleetRef.current) fleetRef.current = new FleetClient();
+    fleetRef.current.setCatalog(sats);
+    frameRef.current = null;
   }, [sats]);
 
-  useEffect(() => {
-    const client = new FleetClient();
-    fleetRef.current = client;
-    return () => {
-      client.dispose();
+  useEffect(
+    () => () => {
+      fleetRef.current?.terminate();
       fleetRef.current = null;
       frameRef.current = null;
-    };
-  }, []);
+    },
+    [],
+  );
 
   const bucket = Math.floor(now.getTime() / FLEET_UPDATE_MS);
   useEffect(() => {
     const client = fleetRef.current;
     if (!client || sats.length === 0) return;
     let cancelled = false;
-    client.request(sats, now).then((f) => {
+    client.request(now.getTime()).then((f) => {
       if (!cancelled && f) frameRef.current = f;
     });
     return () => {
