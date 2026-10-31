@@ -214,3 +214,45 @@
 .st-bottom-nav button[aria-current="true"] span {
   color: inherit;
 }
+
+/* ==========================================================================
+   Profundidad (Image 2) — paneles, radar de cielo y globo
+   ========================================================================== */
+
+/* Paneles flotantes: sombra profunda cian del póster */
+.st-app .hud-panel {
+  box-shadow:
+    0 20px 80px rgba(0, 245, 255, 0.3),
+    0 0 0 1px rgba(0, 245, 255, 0.16),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+/* Radar de cielo local: estela del barrido, scanlines CRT y blip pulsante */
+.st-radar-sweep-trail {
+  stroke: var(--cyan);
+  stroke-width: 1;
+  stroke-linecap: round;
+}
+.st-skyradar {
+  position: relative;
+}
+.st-skyradar::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 12px;
+  pointer-events: none;
+  background: repeating-linear-gradient(0deg, rgba(0, 245, 255, 0.045) 0 1px, transparent 1px 3px);
+}
+.st-radar-live-glow {
+  animation: st-radar-blip 1.6s ease-in-out infinite;
+}
+@keyframes st-radar-blip {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.35; }
+}
+
+/* Contenedor del globo: profundidad sutil */
+.st-globe-wrap {
+  box-shadow: 0 20px 80px rgba(0, 245, 255, 0.08);
+}

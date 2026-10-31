@@ -6,6 +6,15 @@
  *
  * PERF 2026-10-30: flota agrupada por color SIN shadowBlur por punto
  * (antes ~15k save/shadow/restore → FPS 1 en GLOBO).
+ *
+ * PROFUNDIDAD 2026-10-31 (canvas nativo, sin dependencias nuevas):
+ * - Atmósfera volumétrica cian (limbo + halo) que respira con el globo.
+ * - Luces de ciudad con bloom (vértices costeros, doble pasada) y nubes
+ *   bajas con sombra proyectada, cacheadas en el offscreen.
+ * - 3 anillos orbitales con inclinación/velocidad distintas (parallax):
+ *   mitad trasera oculta tras el planeta, mitad frontal por delante.
+ * - Observador con núcleo pulsante + onda expansiva doble; órbita del
+ *   seleccionado con partículas fluyendo (dash animado) y estela cometa.
  */
 import { useEffect, useRef, useState } from "react";
 import { geoGraticule10, geoOrthographic, geoPath } from "../../vendor/d3-geo/index.js";
@@ -15,9 +24,9 @@ import landRaw from "../../vendor/land-110m.json?raw";
 import { FLEET_STRIDE, FLEET_UPDATE_MS } from "../../lib/space/fleet-compute";
 import { FleetClient, type FleetFrame } from "../../lib/space/fleet-worker-client";
 import { dragToRotation, orthoProject, wrapLonDeg, type OrthoView } from "../../lib/space/ortho";
-import { getFix } from "../../lib/space/propagate";
+import { getFix, groundTrack } from "../../lib/space/propagate";
 import { getMoonPosition } from "../../lib/space/moon-position";
-import type { Observer, Sat } from "../../lib/space/types";
+import type { Fix, Observer, Sat } from "../../lib/space/types";
 import { GROUP_COLORS } from "../../lib/ui/colors";
 
 interface GlobeViewProps {
@@ -35,6 +44,44 @@ interface GlobeViewProps {
 const topo = JSON.parse(landRaw) as unknown as { objects: { land: unknown } };
 const LAND = feature(topo as never, topo.objects.land as never) as unknown as GeoJSON.GeoJsonObject;
 const GRATICULE = geoGraticule10();
+
+/* Luces de ciudad: vértices costeros deterministas del land-110m como proxy
+   (las ciudades se agrupan en costas); 1 de cada 9, tope 900 puntos. */
+const CITY_POINTS: [number, number][] = [];
+{
+  let n = 0;
+  const walk = (node: unknown): void => {
+    if (!Array.isArray(node)) return;
+    if (typeof node[0] === "number" && typeof node[1] === "number") {
+      if (n++ % 9 === 0 && CITY_POINTS.length < 900) {
+        CITY_POINTS.push([node[0] as number, node[1] as number]);
+      }
+      return;
+    }
+    for (const child of node) walk(child);
+  };
+  walk(
+    (LAND as unknown as { features: { geometry: { coordinates: unknown } }[] }).features.map(
+      (f) => f.geometry.coordinates,
+    ),
+  );
+}
+
+/* Nubes bajas deterministas: celdas suaves repartidas en ángulo dorado. */
+const CLOUDS: { lat: number; lon: number; r: number; a: number }[] = Array.from({ length: 16 }, (_, i) => ({
+  lat: Math.asin(Math.sin(i * 2.39996)) * 57.29578 * 0.9,
+  lon: ((i * 137.5077) % 360) - 180,
+  r: 0.09 + (((i * 37) % 100) / 100) * 0.13,
+  a: 0.5 + (((i * 53) % 100) / 100) * 0.5,
+}));
+
+/* Anillos orbitales decorativos: 3 capas con inclinación, tamaño y velocidad
+   distintas para parallax; cada una lleva un punto que la recorre. */
+const ORBIT_RINGS = [
+  { tilt: -18, squash: 0.3, radius: 1.38, speed: 0.16, color: "#00f5ff" },
+  { tilt: 24, squash: 0.24, radius: 1.62, speed: -0.1, color: "#a78bff" },
+  { tilt: -52, squash: 0.36, radius: 1.88, speed: 0.06, color: "#5eead4" },
+];
 
 export default function GlobeView({
   sats,
@@ -77,6 +124,7 @@ export default function GlobeView({
   const nowRef = useRef(now);
   nowRef.current = now;
   const centerTriggerRef = useRef(0);
+  const trackRef = useRef<{ key: string; pts: Fix[] } | null>(null);
 
   useEffect(() => {
     byIdRef.current = new Map(sats.map((s) => [s.id, s]));
@@ -191,6 +239,59 @@ export default function GlobeView({
       octx.shadowBlur = 20;
       octx.stroke();
       octx.shadowBlur = 0;
+
+      /* Luces de ciudad con bloom: dos pasadas (halo + núcleo), sin shadowBlur
+         para no matar el FPS durante el arrastre. */
+      const sinLat0 = Math.sin((v.latDeg * Math.PI) / 180);
+      const cosLat0 = Math.cos((v.latDeg * Math.PI) / 180);
+      const lonRad0 = (v.lonDeg * Math.PI) / 180;
+      const cities: { x: number; y: number }[] = [];
+      for (const [lon, lat] of CITY_POINTS) {
+        const phi = (lat * Math.PI) / 180;
+        const lam = (lon * Math.PI) / 180;
+        const cosd = sinLat0 * Math.sin(phi) + cosLat0 * Math.cos(phi) * Math.cos(lam - lonRad0);
+        if (cosd <= 0.04) continue;
+        const ll: [number, number] = [lon, lat];
+        const pt = projection(ll);
+        if (!pt) continue;
+        cities.push({ x: pt[0], y: pt[1] });
+      }
+      octx.beginPath();
+      for (const c of cities) { octx.moveTo(c.x + 2.1, c.y); octx.arc(c.x, c.y, 2.1, 0, Math.PI * 2); }
+      octx.fillStyle = "rgba(255, 214, 122, 0.14)";
+      octx.fill();
+      octx.beginPath();
+      for (const c of cities) { octx.moveTo(c.x + 0.9, c.y); octx.arc(c.x, c.y, 0.9, 0, Math.PI * 2); }
+      octx.fillStyle = "rgba(255, 224, 150, 0.85)";
+      octx.fill();
+
+      /* Nubes bajas con sombra proyectada: rotan con el globo (offscreen). */
+      for (const cl of CLOUDS) {
+        const phi = (cl.lat * Math.PI) / 180;
+        const lam = (cl.lon * Math.PI) / 180;
+        const cosd = sinLat0 * Math.sin(phi) + cosLat0 * Math.cos(phi) * Math.cos(lam - lonRad0);
+        if (cosd <= 0.06) continue;
+        const ll: [number, number] = [cl.lon, cl.lat];
+        const pt = projection(ll);
+        if (!pt) continue;
+        const cr = v.scale * cl.r * (0.65 + cosd * 0.35);
+        const px = pt[0];
+        const py = pt[1];
+        const sh = octx.createRadialGradient(px + cr * 0.18, py + cr * 0.24, 0, px + cr * 0.18, py + cr * 0.24, cr);
+        sh.addColorStop(0, `rgba(0, 34, 52, ${(0.22 * cl.a * cosd).toFixed(3)})`);
+        sh.addColorStop(1, "rgba(0, 34, 52, 0)");
+        octx.fillStyle = sh;
+        octx.beginPath();
+        octx.arc(px + cr * 0.18, py + cr * 0.24, cr, 0, Math.PI * 2);
+        octx.fill();
+        const cg = octx.createRadialGradient(px, py, 0, px, py, cr);
+        cg.addColorStop(0, `rgba(224, 246, 255, ${(0.3 * cl.a * cosd).toFixed(3)})`);
+        cg.addColorStop(1, "rgba(224, 246, 255, 0)");
+        octx.fillStyle = cg;
+        octx.beginPath();
+        octx.arc(px, py, cr, 0, Math.PI * 2);
+        octx.fill();
+      }
     };
 
     let raf = 0;
@@ -240,11 +341,70 @@ export default function GlobeView({
       const amplitude = reducedMotion ? 0 : 0.018;
       const breath = reducedMotion ? 0.5 : (Math.sin((time * Math.PI * 2) / period) + 1) / 2;
       const scale = 1 + (breath - 0.5) * 2 * amplitude;
+
+      /* Anillos orbitales: mitad trasera ANTES del blit (oculta tras el
+         planeta) y mitad frontal al final del frame (efecto Saturno). */
+      const rt = reducedMotion ? 0 : time;
+      const drawRings = (front: boolean) => {
+        for (let i = 0; i < ORBIT_RINGS.length; i++) {
+          const ring = ORBIT_RINGS[i];
+          const tiltRad = ((ring.tilt + Math.sin(rt * 0.05 + i) * 4) * Math.PI) / 180;
+          const rr = v.scale * ring.radius;
+          ctx.save();
+          ctx.translate(cx, cy);
+          ctx.rotate(tiltRad);
+          ctx.scale(1, ring.squash);
+          ctx.setLineDash([5, 11]);
+          ctx.lineDashOffset = -rt * ring.speed * 60;
+          ctx.beginPath();
+          ctx.arc(0, 0, rr, front ? 0 : Math.PI, front ? Math.PI : Math.PI * 2);
+          ctx.strokeStyle = ring.color + (front ? "4d" : "1f");
+          ctx.lineWidth = front ? 1.4 : 1;
+          ctx.stroke();
+          ctx.restore();
+          const a = rt * ring.speed + i * 2.1;
+          const ax = Math.cos(a) * rr;
+          const ay = Math.sin(a) * rr * ring.squash;
+          const px = cx + ax * Math.cos(tiltRad) - ay * Math.sin(tiltRad);
+          const py = cy + ax * Math.sin(tiltRad) + ay * Math.cos(tiltRad);
+          if ((Math.sin(a) >= 0) === front) {
+            ctx.save();
+            ctx.fillStyle = ring.color + (front ? "cc" : "55");
+            if (front) {
+              ctx.shadowColor = ring.color;
+              ctx.shadowBlur = 10;
+            }
+            ctx.beginPath();
+            ctx.arc(px, py, front ? 2.2 : 1.5, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.restore();
+          }
+        }
+      };
+      drawRings(false);
+
       ctx.save();
       ctx.translate(cx, cy);
       ctx.scale(scale, scale);
       ctx.translate(-cx, -cy);
       ctx.drawImage(off, 0, 0, w, h);
+
+      /* Atmósfera volumétrica: limbo interior + halo exterior que respiran. */
+      const limb = ctx.createRadialGradient(cx, cy, v.scale * 0.84, cx, cy, v.scale);
+      limb.addColorStop(0, "rgba(0, 245, 255, 0)");
+      limb.addColorStop(1, `rgba(0, 245, 255, ${(0.16 + breath * 0.1).toFixed(3)})`);
+      ctx.fillStyle = limb;
+      ctx.beginPath();
+      ctx.arc(cx, cy, v.scale, 0, Math.PI * 2);
+      ctx.fill();
+      const halo = ctx.createRadialGradient(cx, cy, v.scale * 0.98, cx, cy, v.scale * 1.18);
+      halo.addColorStop(0, "rgba(0, 245, 255, 0)");
+      halo.addColorStop(0.55, `rgba(0, 245, 255, ${(0.14 + breath * 0.12).toFixed(3)})`);
+      halo.addColorStop(1, "rgba(0, 245, 255, 0)");
+      ctx.fillStyle = halo;
+      ctx.beginPath();
+      ctx.arc(cx, cy, v.scale * 1.18, 0, Math.PI * 2);
+      ctx.fill();
       hitsRef.current.length = 0;
       const proj = (lat: number, lon: number) => orthoProject(lat, lon, v, cx, cy);
       const glowBlur = reducedMotion ? 20 : 16 + breath * 34;
@@ -286,13 +446,25 @@ export default function GlobeView({
       if (obs) {
         const p = proj(obs.latitude, obs.longitude);
         if (p.visible) {
+          /* Punto del observador: núcleo naranja pulsante + onda expansiva doble. */
           ctx.save();
-          ctx.translate(p.x, p.y);
-          ctx.rotate(Math.PI / 4);
-          ctx.fillStyle = "#ff6700";
+          const cycle = 2.4;
+          const ph = reducedMotion ? 0.3 : (time % cycle) / cycle;
+          for (const off of [0, 0.5]) {
+            const w = (ph + off) % 1;
+            ctx.strokeStyle = `rgba(255, 140, 60, ${(0.5 * (1 - w)).toFixed(3)})`;
+            ctx.lineWidth = 1.4;
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, 4 + w * 26, 0, Math.PI * 2);
+            ctx.stroke();
+          }
           ctx.shadowColor = "rgba(255,103,0,.9)";
           ctx.shadowBlur = glowBlur;
-          ctx.fillRect(-3.5, -3.5, 7, 7);
+          const pulse = 1 + (reducedMotion ? 0 : 0.3 * Math.sin((time * Math.PI * 2) / cycle));
+          ctx.fillStyle = "#ff8c3c";
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, 2.8 * pulse, 0, Math.PI * 2);
+          ctx.fill();
           ctx.restore();
         }
       }
@@ -309,6 +481,58 @@ export default function GlobeView({
         ctx.arc(0, 0, 4.5, 0, Math.PI * 2);
         ctx.fill();
         ctx.restore();
+      }
+
+      /* Órbita del seleccionado: camino tenue + partículas fluyendo (dash
+         animado) + estela cometa; recalculada por cubo de flota. */
+      if (sel) {
+        const bucketNow = Math.floor(nowRef.current.getTime() / FLEET_UPDATE_MS);
+        const trackKey = `${sel.id}:${sel.line1}:${bucketNow}`;
+        if (trackRef.current?.key !== trackKey) {
+          trackRef.current = { key: trackKey, pts: groundTrack(sel, nowRef.current, { orbits: 1, samples: 96 }) };
+        }
+        const segs: { x: number; y: number }[][] = [];
+        let pen = false;
+        for (const f of trackRef.current.pts) {
+          const q = proj(f.latDeg, f.lonDeg);
+          if (q.visible) {
+            if (!pen) { segs.push([]); pen = true; }
+            segs[segs.length - 1].push({ x: q.x, y: q.y });
+          } else {
+            pen = false;
+          }
+        }
+        const strokeSegs = () => {
+          for (const s of segs) {
+            if (s.length < 2) continue;
+            ctx.beginPath();
+            ctx.moveTo(s[0].x, s[0].y);
+            for (let i = 1; i < s.length; i++) ctx.lineTo(s[i].x, s[i].y);
+            ctx.stroke();
+          }
+        };
+        ctx.strokeStyle = "rgba(0, 245, 255, 0.16)";
+        ctx.lineWidth = 1;
+        strokeSegs();
+        ctx.save();
+        ctx.strokeStyle = "rgba(0, 245, 255, 0.6)";
+        ctx.lineWidth = 1.8;
+        if (!reducedMotion) {
+          ctx.setLineDash([2.5, 24]);
+          ctx.lineDashOffset = -((time * 46) % 1000);
+        }
+        strokeSegs();
+        ctx.restore();
+        for (let k = 0; k < 5; k++) {
+          const past = getFix(sel, new Date(nowRef.current.getTime() - (k + 1) * 150_000));
+          if (!past) continue;
+          const q = proj(past.latDeg, past.lonDeg);
+          if (!q.visible) continue;
+          ctx.fillStyle = `rgba(255, 160, 80, ${(0.34 - k * 0.06).toFixed(2)})`;
+          ctx.beginPath();
+          ctx.arc(q.x, q.y, 1.7 - k * 0.18, 0, Math.PI * 2);
+          ctx.fill();
+        }
       }
 
       if (sel) {
@@ -337,6 +561,8 @@ export default function GlobeView({
       }
 
       ctx.restore();
+
+      drawRings(true);
     };
 
     raf = requestAnimationFrame(draw);
