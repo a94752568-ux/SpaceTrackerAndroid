@@ -722,13 +722,7 @@ export default function MapView({
     if (!trackOldRef.current) {
       trackOldRef.current = L.polyline(segOld, { ...trackOpts, opacity: 0.14, className: "st-track-old" }).addTo(map);
       trackMidRef.current = L.polyline(segMid, { ...trackOpts, opacity: 0.32, className: "st-track-mid" }).addTo(map);
-      trackFutRef.current = L.polyline(segFut, {
-        ...trackOpts,
-        opacity: 0.7,
-        weight: 2.2,
-        dashArray: "10 8",
-        className: "st-track-fut",
-      }).addTo(map);
+      trackFutRef.current = L.polyline(segFut, { ...trackOpts, opacity: 0.7, weight: 2.2, dashArray: "10 8", className: "st-track-fut" }).addTo(map);
     } else {
       trackOldRef.current.setLatLngs(segOld);
       trackMidRef.current?.setLatLngs(segMid);

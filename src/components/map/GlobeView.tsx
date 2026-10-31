@@ -69,6 +69,10 @@ export default function GlobeView({
   selectedRef.current = selected;
   const trackedRef = useRef(tracked);
   trackedRef.current = tracked;
+  const onSelectRef = useRef(onSelect);
+  onSelectRef.current = onSelect;
+  const onUserPanRef = useRef(onUserPan);
+  onUserPanRef.current = onUserPan;
   const observerRef = useRef(observer);
   observerRef.current = observer;
   const nowRef = useRef(now);
@@ -355,7 +359,7 @@ export default function GlobeView({
       const next = dragToRotation(viewRef.current, dx, dy);
       viewRef.current.latDeg = next.latDeg;
       viewRef.current.lonDeg = next.lonDeg;
-      onUserPan?.();
+      onUserPanRef.current?.();
     };
     const onUp = (e: PointerEvent) => {
       dragging = false;
@@ -373,7 +377,10 @@ export default function GlobeView({
       }
       if (best) {
         const sat = byIdRef.current.get(best.id);
-        if (sat) onSelect(sat);
+        if (sat) onSelectRef.current(sat);
+      } else {
+        // Clic vacío: liberar el seguimiento (igual que al arrastrar).
+        onUserPanRef.current?.();
       }
     };
     const onWheel = (e: WheelEvent) => {
@@ -398,7 +405,9 @@ export default function GlobeView({
       canvas.removeEventListener("click", onClick);
       canvas.removeEventListener("wheel", onWheel);
     };
-  }, [onSelect, onUserPan]);
+
+    // onSelect/onUserPan viven en refs: el canvas no se re-inicializa en cada render.
+  }, []);
 
   return (
     <div ref={wrapRef} className="st-globe-wrap">
